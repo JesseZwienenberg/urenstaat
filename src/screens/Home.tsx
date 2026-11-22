@@ -13,7 +13,7 @@ export function Home() {
   const saved = Object.values(weeks).sort((a, b) => b.id.localeCompare(a.id));
 
   return (
-    <Page title="Urenstaat" showBack={false}>
+    <Page title="Uurwerk" showBack={false}>
       {sharedFile && (
         <Notice kind="ok">Tijdlijn-bestand ontvangen. Tik op “Nieuwe week” om het te gebruiken.</Notice>
       )}
@@ -141,7 +141,7 @@ export function SettingsScreen() {
       tools: store.tools,
       weeks: Object.values(store.weeks),
     });
-    const file = new File([JSON.stringify(data)], `urenstaat-backup-${todayKey()}.json`, {
+    const file = new File([JSON.stringify(data)], `uurwerk-backup-${todayKey()}.json`, {
       type: 'application/json',
     });
     if (canShareFile(file)) await shareFile(file);
@@ -270,7 +270,7 @@ export function Help() {
         ))}
       </ol>
       <Notice kind="info">
-        <b>Sneller:</b> open het bestand in de app Bestanden, tik op <b>Delen</b> en kies <b>Urenstaat</b>. Dan
+        <b>Sneller:</b> open het bestand in de app Bestanden, tik op <b>Delen</b> en kies <b>Uurwerk</b>. Dan
         hoef je het bestand niet zelf op te zoeken.
       </Notice>
     </Page>
