@@ -45,6 +45,7 @@ Code layout:
 - `src/lib/db.ts` – IndexedDB, backup and restore
 - `src/screens/` – the screens
 - `public/sw.js` – offline cache and Android share target
+- `design/` – the app icon (a clock with a folding ruler as hands) as SVG, the source of the PNGs in `public/icons/`. A new icon needs new PNG file names, or Chrome keeps showing the old one.
 
 ### About the sample export
 
