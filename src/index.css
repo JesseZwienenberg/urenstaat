@@ -7,7 +7,8 @@ html {
 }
 
 body {
-  background-color: #f3f4f6;
+  /* A shade darker than before, so the white cards stand out (gray-200). */
+  background-color: #e5e7eb;
   color: #111827;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   overscroll-behavior-y: contain;

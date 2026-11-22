@@ -6,7 +6,9 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 const VARIANTS: Record<Variant, string> = {
   primary: 'bg-emerald-700 text-white active:bg-emerald-800 disabled:bg-gray-300 disabled:text-gray-500',
-  secondary: 'bg-white text-gray-900 border-2 border-gray-300 active:bg-gray-100 disabled:text-gray-400',
+  // Green outline, so buttons stand apart from input fields (gray outline).
+  secondary:
+    'bg-white text-emerald-800 border-2 border-emerald-700 active:bg-emerald-50 disabled:border-gray-300 disabled:text-gray-400',
   danger: 'bg-white text-red-700 border-2 border-red-300 active:bg-red-50',
   ghost: 'text-emerald-800 underline underline-offset-4',
 };
@@ -54,7 +56,7 @@ export function Page({
       </header>
       <main className="flex-1 space-y-4 p-4">{children}</main>
       {footer && (
-        <footer className="sticky bottom-0 space-y-3 border-t border-gray-200 bg-gray-100 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <footer className="sticky bottom-0 space-y-3 border-t border-gray-300 bg-gray-200 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {footer}
         </footer>
       )}
@@ -124,7 +126,7 @@ export function Notice({ kind, children }: { kind: 'error' | 'warning' | 'ok' | 
     error: 'border-red-300 bg-red-50 text-red-900',
     warning: 'border-amber-400 bg-amber-50 text-amber-900',
     ok: 'border-emerald-300 bg-emerald-50 text-emerald-900',
-    info: 'border-gray-300 bg-white text-gray-800',
+    info: 'border-sky-300 bg-sky-50 text-sky-950',
   }[kind];
   return (
     <div ref={ref} role={kind === 'error' ? 'alert' : 'status'} className={`rounded-xl border-2 p-3 text-base ${styles}`}>
@@ -156,6 +158,10 @@ export function ErrorNotice({ error }: { error: ErrorMessage }) {
 
 export const selectClass =
   'min-h-14 w-full rounded-xl border-2 border-gray-300 bg-white px-3 text-lg focus:border-emerald-700 focus:outline-none';
+
+/** A dropdown that adds something ("+ Locatie toevoegen…"): dashed green, so it reads as an action. */
+export const addSelectClass =
+  'min-h-14 w-full rounded-xl border-2 border-dashed border-emerald-700 bg-white px-3 text-lg font-semibold text-emerald-800 focus:outline-none';
 
 export function Steps({ current }: { current: 1 | 2 | 3 | 4 | 5 }) {
   return (

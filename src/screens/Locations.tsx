@@ -171,12 +171,7 @@ export function LocationForm({
           hint="Nog niet bekend? Laat het leeg en vul het later in."
         />
         <Field label="Naam" value={name} onChange={(e) => setName(e.target.value)} hint="Bijvoorbeeld: Verbouwing fam. Jansen" />
-        <Checkbox
-          label="Altijd regie"
-          checked={regie}
-          onChange={setRegie}
-          hint="De klant betaalt per uur. De uren worden de gemeten tijd, naar boven afgerond op een half uur, ook buiten werktijd. Is maar een deel regie? Dat stel je per dag in bij Controleer uren."
-        />
+        <Checkbox label="Altijd regie" checked={regie} onChange={setRegie} />
         <Field
           label="Adres"
           value={address}

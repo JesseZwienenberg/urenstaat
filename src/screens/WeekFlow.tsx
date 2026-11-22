@@ -1,7 +1,7 @@
 /** Steps 2–5 of the weekly flow: import, check hours, tools, document. */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TimesheetPreview } from '../components/TimesheetPreview';
-import { Button, Card, ErrorNotice, Field, Notice, Page, selectClass, useError } from '../components/ui';
+import { addSelectClass, Button, Card, ErrorNotice, Field, Notice, Page, selectClass, useError } from '../components/ui';
 import { canShareFile, downloadFile, shareFile } from '../lib/device';
 import { dayName, formatDate, formatDayShort, formatHours, formatMinutes } from '../lib/format';
 import { applyProposals, dayTotal, HOUR_STEP, weekTotal, workdaysOf, type UnknownVisit } from '../lib/hours';
@@ -379,7 +379,7 @@ function DayCard({
       {day.entries.map((entry, index) => {
         const location = locationById.get(entry.locationId);
         return (
-          <div key={entry.locationId} className="rounded-xl border-2 border-gray-200 p-3">
+          <div key={entry.locationId} className="rounded-xl border border-gray-200 bg-gray-50 p-3">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="text-lg font-semibold">{locationLabel(location)}</p>
@@ -467,7 +467,7 @@ function DayCard({
 
       {available.length > 0 && (
         <select
-          className={selectClass}
+          className={addSelectClass}
           value=""
           aria-label="Locatie toevoegen"
           onChange={(e) => {
@@ -566,39 +566,9 @@ function ToolsStep({ week }: { week: WeekRecord }) {
       subtitle={`Stap 4 van 5 · ${weekTitle(week)}`}
       footer={<Button onClick={() => go({ name: 'week', weekId: week.id, step: 5 })}>Verder</Button>}
     >
-      <Button variant="secondary" onClick={copyPrevious} disabled={!previous || previous.tools.length === 0}>
-        Kopieer van vorige week
-      </Button>
-      {message && <Notice kind="info">{message}</Notice>}
-
-      {usages.map((usage) => (
-        <Card key={usage.id} className="space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-lg font-bold">{toolById.get(usage.toolId)?.name}</p>
-              <p className="text-base text-gray-700">{locationLabel(locationById.get(usage.locationId))}</p>
-            </div>
-            <button
-              type="button"
-              aria-label="Verwijder regel"
-              className="-mt-1 -mr-1 min-h-11 min-w-11 text-2xl text-gray-500"
-              onClick={() => save(week.tools.filter((u) => u.id !== usage.id))}
-            >
-              ✕
-            </button>
-          </div>
-          <Field
-            label="Hoeveelheid"
-            value={usage.amount ?? ''}
-            onChange={(e) => save(week.tools.map((u) => (u.id === usage.id ? { ...u, amount: e.target.value } : u)))}
-            placeholder="Bijvoorbeeld 3 of 12 m"
-            autoComplete="off"
-          />
-        </Card>
-      ))}
-
-      <Card className="space-y-3">
-        <h2 className="text-xl font-bold">Materiaal toevoegen</h2>
+      {/* The form is always on top and framed in green; what was added is a plain list below it. */}
+      <Card className="space-y-3 border-2 border-emerald-700">
+        <h2 className="text-xl font-bold text-emerald-900">Materiaal toevoegen</h2>
         {options.length === 0 ? (
           <p className="text-base text-gray-700">Voeg eerst een werklocatie toe.</p>
         ) : (
@@ -647,25 +617,64 @@ function ToolsStep({ week }: { week: WeekRecord }) {
               placeholder="Bijvoorbeeld 3 of 12 m"
               autoComplete="off"
             />
-            <select
-              className={selectClass}
-              value={chosenLocation}
-              onChange={(e) => setLocationId(e.target.value)}
-              aria-label="Werknummer"
-            >
-              <option value="">Kies werknummer…</option>
-              {options.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {locationLabel(l)}
-                </option>
-              ))}
-            </select>
+            <label className="block">
+              <span className="mb-1 block text-base font-semibold text-gray-800">Werknummer</span>
+              <select className={selectClass} value={chosenLocation} onChange={(e) => setLocationId(e.target.value)}>
+                <option value="">Kies werknummer…</option>
+                {options.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {locationLabel(l)}
+                  </option>
+                ))}
+              </select>
+            </label>
             <Button onClick={add} disabled={typed === '' || !chosenLocation}>
               Toevoegen
             </Button>
           </>
         )}
       </Card>
+
+      <Button variant="secondary" onClick={copyPrevious} disabled={!previous || previous.tools.length === 0}>
+        Kopieer van vorige week
+      </Button>
+      {message && <Notice kind="info">{message}</Notice>}
+
+      {usages.length > 0 && (
+        <>
+          <h2 className="pt-2 text-xl font-bold">Toegevoegd deze week ({usages.length})</h2>
+          <ul className="divide-y divide-gray-200 rounded-xl bg-white shadow-sm">
+            {usages.map((usage) => (
+              <li key={usage.id} className="flex items-start gap-2 p-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-lg font-bold">{toolById.get(usage.toolId)?.name}</p>
+                  <p className="text-sm text-gray-600">{locationLabel(locationById.get(usage.locationId))}</p>
+                  <label className="mt-2 flex items-center gap-2 text-sm text-gray-700">
+                    Hoeveelheid
+                    <input
+                      value={usage.amount ?? ''}
+                      onChange={(e) =>
+                        save(week.tools.map((u) => (u.id === usage.id ? { ...u, amount: e.target.value } : u)))
+                      }
+                      placeholder="bijv. 12 m"
+                      autoComplete="off"
+                      className="min-h-11 w-36 rounded-lg border border-gray-300 bg-gray-50 px-2 text-base focus:border-emerald-700 focus:outline-none"
+                    />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Verwijder regel"
+                  className="-mt-1 -mr-1 min-h-11 min-w-11 text-2xl text-gray-500"
+                  onClick={() => save(week.tools.filter((u) => u.id !== usage.id))}
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </Page>
   );
 }
