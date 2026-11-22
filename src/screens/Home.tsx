@@ -164,7 +164,7 @@ export function SettingsScreen() {
   return (
     <Page title="Instellingen">
       {message && (
-        <Notice key={message.id} kind={message.kind}>
+        <Notice key={message.id} kind={message.kind} reveal>
           {message.text}
         </Notice>
       )}
