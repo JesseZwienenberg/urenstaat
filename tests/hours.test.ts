@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { haversineMeters, matchLocation } from '../src/lib/geo';
-import { applyProposals, emptyWeek, measureWeek, proposeHours } from '../src/lib/hours';
+import { applyProposals, emptyWeek, measureWeek, proposeHours, regieHours } from '../src/lib/hours';
 import { parseTimelineText, sliceTimeline } from '../src/lib/timeline/parser';
-import { addDays, dateKeyOf, startOfDayMs } from '../src/lib/tz';
+import { addDays, atLocalHourMs, dateKeyOf, startOfDayMs } from '../src/lib/tz';
 import { isoWeekOf, previousWeekOf, weekDates, weekId, weekRangeMs } from '../src/lib/week';
 import { DEFAULT_SETTINGS, type MarkedPlace, type WorkLocation } from '../src/types';
 
@@ -112,6 +112,43 @@ describe('proposeHours', () => {
   });
 });
 
+describe('regie', () => {
+  const hours = (minutes: Record<string, number>) =>
+    Object.fromEntries(proposeHours(minutes, 8, new Set(['R'])).map((e) => [e.locationId, e.hours]));
+
+  it('rounds the measured time up to a half hour', () => {
+    expect(regieHours(430, 8)).toBe(7.5); // 7 h 10 min
+    expect(regieHours(25, 8)).toBe(0.5);
+    expect(regieHours(480, 8)).toBe(8);
+    expect(regieHours(540, 8)).toBe(9);
+  });
+  it('keeps a day just over the norm at the norm', () => {
+    expect(regieHours(481, 8)).toBe(8);
+    expect(regieHours(500, 8)).toBe(8); // 8 h 20 min
+    expect(regieHours(509, 8)).toBe(8);
+    expect(regieHours(510, 8)).toBe(8.5); // exactly 30 minutes over: rounded up as usual
+    expect(regieHours(520, 8)).toBe(9); // 8 h 40 min
+  });
+  it('gives the other locations what is left of the day', () => {
+    expect(hours({ R: 250 })).toEqual({ R: 4.5 });
+    expect(hours({ A: 240, R: 250 })).toEqual({ A: 3.5, R: 4.5 });
+    expect(hours({ A: 240, B: 120, R: 250 })).toEqual({ A: 2.5, B: 1, R: 4.5 });
+    expect(hours({ A: 60, R: 450 })).toEqual({ A: 0.5, R: 7.5 });
+    expect(hours({ A: 120, R: 520 })).toEqual({ R: 9 }); // nothing left
+    expect(hours({ A: 300, R: 15 })).toEqual({ A: 8 }); // under 20 minutes: dropped
+  });
+  it('counts time outside working hours at a regie location', () => {
+    const date = '2026-11-16';
+    const visits = [{ startMs: atLocalHourMs(date, 15), endMs: atLocalHourMs(date, 18.5), lat: 52.1561, lng: 5.3878 }];
+    const travels = [{ startMs: atLocalHourMs(date, 14.5), endMs: atLocalHourMs(date, 15) }];
+    const options = { minStayMinutes: 15, workStartHour: 6, workEndHour: 17 };
+    expect(measureWeek(visits, travels, [jobA], [date], options).days[date]).toEqual({ A: 120 + 30 });
+    expect(measureWeek(visits, travels, [{ ...jobA, regie: true }], [date], options).days[date]).toEqual({
+      A: 210 + 30,
+    });
+  });
+});
+
 describe('sample week 47 of 2026', () => {
   const text = readFileSync(new URL('./fixtures/sample-timeline.json', import.meta.url), 'utf8');
   const isoWeek = { isoYear: 2026, isoWeek: 47 };
@@ -153,6 +190,16 @@ describe('sample week 47 of 2026', () => {
       '2026-11-19': { A: 8 },
       '2026-11-20': { A: 7, B: 1 },
     });
+  });
+
+  it('proposes regie hours for a regie location', () => {
+    const week = { ...emptyWeek(2026, 47, '2026-W47'), ...sliced, importedAt: 1 };
+    const result = applyProposals(week, [{ ...jobA, regie: true }, jobB], DEFAULT_SETTINGS).week;
+    const hoursOf = (date: string) =>
+      Object.fromEntries(result.days[date].entries.map((e) => [e.locationId, e.hours]));
+    expect(hoursOf('2026-11-16')).toEqual({ A: 9.5 }); // 545 min
+    expect(hoursOf('2026-11-17')).toEqual({ A: 4.5, B: 3.5 }); // A 260 min, B gets the rest
+    expect(hoursOf('2026-11-19')).toEqual({ A: 8.5 }); // 510 min: exactly half an hour over
   });
 
   it('gives the same result when the same file is imported twice', () => {

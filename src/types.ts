@@ -31,6 +31,11 @@ export interface WorkLocation {
   lng: number;
   radius: number;
   archived: boolean;
+  /**
+   * Always "regie": the client pays per hour. Hours are the measured time rounded up to a
+   * half hour, also outside working hours. Missing in data saved before regie existed.
+   */
+  regie?: boolean;
 }
 
 export const DEFAULT_RADIUS = 150;
@@ -81,6 +86,11 @@ export interface HourEntry {
   hours: number;
   /** Time at the location plus travel towards it, from the Timeline. 0 for manual entries. */
   measuredMinutes: number;
+  /**
+   * The part of `hours` that is regie, for a location that is only partly regie.
+   * On the timesheet it gets its own row with "(regie)" after the address.
+   */
+  regieHours?: number;
 }
 
 export interface DayRecord {
@@ -95,6 +105,8 @@ export interface ToolUsage {
   id: string;
   toolId: string;
   locationId: string;
+  /** Free text, e.g. "3" or "12 m". Missing in data saved before amounts existed. */
+  amount?: string;
   /** Optional: yyyy-MM-dd dates within the week. */
   dates: string[];
 }

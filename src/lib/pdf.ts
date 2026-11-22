@@ -1,16 +1,10 @@
-/** Builds the weekly "Urenstaat" PDF: plain A4, black on white. */
+/** Builds the weekly "Urenstaat" PDF: plain A4, black on white. The content comes from timesheet.ts. */
 import { jsPDF } from 'jspdf';
 import autoTable, { type RowInput } from 'jspdf-autotable';
-import type { Settings, Tool, WeekRecord, WorkLocation } from '../types';
-import { formatDate, formatDayDate, formatHours } from './format';
-import { weekDates } from './week';
+import type { WeekRecord } from '../types';
+import { buildTimesheet, type Table, type TimesheetInput } from './timesheet';
 
-export interface PdfInput {
-  week: WeekRecord;
-  settings: Settings;
-  locations: WorkLocation[];
-  tools: Tool[];
-}
+export type PdfInput = TimesheetInput;
 
 export function pdfFileName(week: WeekRecord): string {
   return `Urenstaat week ${week.isoWeek} ${week.isoYear}.pdf`;
@@ -19,26 +13,23 @@ export function pdfFileName(week: WeekRecord): string {
 const BLACK = 0;
 const MARGIN = 15;
 
-export function buildPdf({ week, settings, locations, tools }: PdfInput): jsPDF {
+export function buildPdf(input: PdfInput): jsPDF {
+  const sheet = buildTimesheet(input);
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const dates = weekDates(week);
-  const locationById = new Map(locations.map((l) => [l.id, l]));
-  const toolById = new Map(tools.map((t) => [t.id, t]));
 
   // Header
   doc.setTextColor(BLACK);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text(`Urenstaat week ${week.isoWeek} ${week.isoYear}`, MARGIN, 20);
+  doc.text(sheet.title, MARGIN, 20);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   let y = 28;
-  for (const line of [settings.name, settings.company].filter((s) => s.trim() !== '')) {
+  for (const line of sheet.lines) {
     doc.text(line, MARGIN, y);
     y += 5.5;
   }
-  doc.text(`${formatDate(dates[0])} t/m ${formatDate(dates[6])}`, MARGIN, y);
-  y += 10;
+  y += 4.5;
 
   const tableStyle = {
     theme: 'grid' as const,
@@ -54,30 +45,18 @@ export function buildPdf({ week, settings, locations, tools }: PdfInput): jsPDF 
     headStyles: { fillColor: 255, textColor: BLACK, fontStyle: 'bold' as const, lineWidth: 0.2 },
   };
 
+  const body = (table: Table): RowInput[] =>
+    table.rows.length > 0 ? table.rows : [[{ content: table.empty, colSpan: table.head.length }]];
+
   // Table 1: Uren
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.text('Uren', MARGIN, y);
-
-  const hourRows: RowInput[] = [];
-  for (const date of dates) {
-    for (const entry of week.days[date]?.entries ?? []) {
-      const location = locationById.get(entry.locationId);
-      hourRows.push([
-        formatDayDate(date),
-        location?.werknummer ?? '',
-        location?.address ?? '',
-        formatHours(entry.hours),
-      ]);
-    }
-  }
-  if (hourRows.length === 0) hourRows.push([{ content: 'Geen uren ingevuld', colSpan: 4 }]);
-
+  doc.text(sheet.hours.title, MARGIN, y);
   autoTable(doc, {
     ...tableStyle,
     startY: y + 3,
-    head: [['Datum', 'Werknummer', 'Adres', 'Uren']],
-    body: hourRows,
+    head: [sheet.hours.head],
+    body: body(sheet.hours),
     columnStyles: { 0: { cellWidth: 34 }, 1: { cellWidth: 34 }, 3: { cellWidth: 20, halign: 'right' } },
   });
 
@@ -90,28 +69,13 @@ export function buildPdf({ week, settings, locations, tools }: PdfInput): jsPDF 
   }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.text('Gebruikte materialen', MARGIN, toolsY);
-
-  const toolRows: RowInput[] = week.tools
-    .filter((usage) => toolById.has(usage.toolId))
-    .map((usage) => {
-      const location = locationById.get(usage.locationId);
-      return [
-        toolById.get(usage.toolId)!.name,
-        location?.werknummer ?? '',
-        location?.address ?? '',
-      ];
-    });
-  if (toolRows.length === 0) {
-    toolRows.push([{ content: 'Geen materialen ingevuld', colSpan: 3 }]);
-  }
-
+  doc.text(sheet.tools.title, MARGIN, toolsY);
   autoTable(doc, {
     ...tableStyle,
     startY: toolsY + 3,
-    head: [['Materiaal', 'Werknummer', 'Adres']],
-    body: toolRows,
-    columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 34 } },
+    head: [sheet.tools.head],
+    body: body(sheet.tools),
+    columnStyles: { 0: { cellWidth: 52 }, 1: { cellWidth: 30 }, 2: { cellWidth: 32 } },
   });
 
   return doc;

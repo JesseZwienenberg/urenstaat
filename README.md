@@ -9,17 +9,20 @@ Everything is stored on the phone (IndexedDB). There is no server and no account
 1. **Kies week** – defaults to the current ISO week.
 2. **Importeer Tijdlijn** – pick the exported JSON file, or share it into the app from Android. Only the selected week is used; importing the same file again changes nothing.
 3. **Controleer uren** – each workday gets a proposal of 8 in half-hour steps, split over the locations visited.
-4. **Vul materialen in** – materials per job number, with "Kopieer van vorige week".
-5. **Maak document** – `Urenstaat week [nr] [jaar].pdf`, shared through the Android share sheet or saved.
+4. **Vul materialen in** – materials per job number, each with an amount in free text ("3", "12 m"). Type to search the list; a name that is not in it yet is added. "Kopieer van vorige week" copies the lines without their amounts.
+5. **Maak document** – a preview, then `Urenstaat week [nr] [jaar].pdf`, shared through the Android share sheet or saved. "Kopieer als tekst" copies the same content as tab-separated text, for changes the app cannot make.
 
 ### Hour rules
 
 - Time at a work location counts for that location, and so does the travel **towards** it (everything driven since the previous stay, same day). Travel home does not count.
-- Only time between 06:00 and 17:00 counts (setting).
+- Only time between 06:00 and 17:00 counts (setting), except at regie locations.
 - A visit is matched to the nearest active location within its radius (default 150 m). Other places are ignored; those visited during working hours are listed under "Onbekende plekken".
 - A place from that list can be marked as **private** (home: never counts, no longer listed) or as **work without a job number** (builders' merchant, workshop: the time there and the drive to it count for the next job that day).
 - Stays shorter than 15 minutes are ignored (setting).
 - A workday is 8 hours (setting), in steps of half an hour. With several locations the hours are split in proportion to the measured time. A location with at least 20 measured minutes gets at least 1 hour; shorter ones are dropped.
+- A location marked **Altijd regie** (paid per hour) gets its measured time rounded up to a half hour, including time outside working hours. Just over the workday (by less than 30 minutes) stays the workday: 8 h 20 min → 8, 8 h 40 min → 9. Other locations that day share what is left of the 8 hours.
+- Part of a day at a location can be marked as regie ("Gedeeltelijk regie"). On the timesheet that part gets its own row, with "(regie)" after the address.
+- When a location has no address, the timesheet shows its name in the address column.
 - Saturday and Sunday are never filled in automatically. They can be added by hand.
 - Days edited by hand are kept when a file is imported again.
 - All day boundaries use Europe/Amsterdam time, including daylight saving time.
