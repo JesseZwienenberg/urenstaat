@@ -1,16 +1,26 @@
 /** Steps 2–5 of the weekly flow: import, check hours, tools, document. */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { TimesheetPreview } from '../components/TimesheetPreview';
 import { Button, Card, ErrorNotice, Field, Notice, Page, selectClass, useError } from '../components/ui';
 import { canShareFile, downloadFile, shareFile } from '../lib/device';
 import { dayName, formatDate, formatDayShort, formatHours, formatMinutes } from '../lib/format';
 import { applyProposals, dayTotal, HOUR_STEP, weekTotal, workdaysOf, type UnknownVisit } from '../lib/hours';
 import { byWerknummer, hasWerknummer, locationLabel, placeName } from '../lib/location';
 import { findByName, searchByName } from '../lib/search';
+import { buildTimesheet, timesheetText } from '../lib/timesheet';
 import { parseTimelineText, sliceTimeline, TimelineParseError } from '../lib/timeline/parser';
 import { isWeekend, timeOf } from '../lib/tz';
 import { shiftWeek, weekDates, weekId, weekRangeMs } from '../lib/week';
 import { useStore } from '../store';
-import { PLACE_RADIUS, type DayRecord, type MarkedPlace, type ToolUsage, type WeekRecord, type WorkLocation } from '../types';
+import {
+  PLACE_RADIUS,
+  type DayRecord,
+  type HourEntry,
+  type MarkedPlace,
+  type ToolUsage,
+  type WeekRecord,
+  type WorkLocation,
+} from '../types';
 
 const DAY_MS = 86_400_000;
 
@@ -19,6 +29,22 @@ function useWeek(id: string): WeekRecord | undefined {
 }
 
 const weekTitle = (week: WeekRecord) => `Week ${week.isoWeek} · ${week.isoYear}`;
+
+/** A day with an always-regie location: its total differing from the norm is expected. */
+function hasRegie(day: DayRecord, locationById: Map<string, WorkLocation>): boolean {
+  return day.entries.some((e) => locationById.get(e.locationId)?.regie);
+}
+
+/** New hours for a line; the regie part never exceeds them. */
+function withHours(entry: HourEntry, hours: number): HourEntry {
+  return entry.regieHours ? { ...entry, hours, regieHours: Math.min(entry.regieHours, hours) } : { ...entry, hours };
+}
+
+/** Sets the regie part of a line; 0 removes it. */
+function withRegie(entry: HourEntry, regieHours: number): HourEntry {
+  const { regieHours: _old, ...rest } = entry;
+  return regieHours > 0 ? { ...rest, regieHours: Math.min(regieHours, entry.hours) } : rest;
+}
 
 export function WeekFlow({ weekId: id, step }: { weekId: string; step: 2 | 3 | 4 | 5 }) {
   const week = useWeek(id);
@@ -335,6 +361,8 @@ function DayCard({
 }) {
   const total = dayTotal(day);
   const edit = (entries: DayRecord['entries']) => onChange({ ...day, entries, manual: true });
+  const change = (index: number, update: (entry: HourEntry) => HourEntry) =>
+    edit(day.entries.map((e, i) => (i === index ? update(e) : e)));
   const available = active.filter((l) => !day.entries.some((e) => e.locationId === l.id));
 
   return (
@@ -348,49 +376,90 @@ function DayCard({
 
       {day.entries.length === 0 && <p className="text-base text-gray-600">Geen uren.</p>}
 
-      {day.entries.map((entry, index) => (
-        <div key={entry.locationId} className="rounded-xl border-2 border-gray-200 p-3">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-lg font-semibold">{locationLabel(locationById.get(entry.locationId))}</p>
-              <p className="text-sm text-gray-600">
-                {entry.measuredMinutes > 0 ? `Gemeten: ${formatMinutes(entry.measuredMinutes)}` : 'Zelf ingevuld'}
-              </p>
+      {day.entries.map((entry, index) => {
+        const location = locationById.get(entry.locationId);
+        return (
+          <div key={entry.locationId} className="rounded-xl border-2 border-gray-200 p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-lg font-semibold">{locationLabel(location)}</p>
+                <p className="text-sm text-gray-600">
+                  {location?.regie && <b className="text-emerald-800">Regie · </b>}
+                  {entry.measuredMinutes > 0 ? `Gemeten: ${formatMinutes(entry.measuredMinutes)}` : 'Zelf ingevuld'}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Verwijder regel"
+                className="-mt-1 -mr-1 min-h-11 min-w-11 text-2xl text-gray-500"
+                onClick={() => edit(day.entries.filter((_, i) => i !== index))}
+              >
+                ✕
+              </button>
             </div>
-            <button
-              type="button"
-              aria-label="Verwijder regel"
-              className="-mt-1 -mr-1 min-h-11 min-w-11 text-2xl text-gray-500"
-              onClick={() => edit(day.entries.filter((_, i) => i !== index))}
-            >
-              ✕
-            </button>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <Button
+                variant="secondary"
+                className="w-16! text-2xl"
+                aria-label="Half uur minder"
+                disabled={entry.hours <= HOUR_STEP}
+                onClick={() => change(index, (e) => withHours(e, e.hours - HOUR_STEP))}
+              >
+                −
+              </Button>
+              <span className="text-2xl font-bold">{formatHours(entry.hours)} uur</span>
+              <Button
+                variant="secondary"
+                className="w-16! text-2xl"
+                aria-label="Half uur meer"
+                disabled={entry.hours >= 24}
+                onClick={() => change(index, (e) => withHours(e, e.hours + HOUR_STEP))}
+              >
+                +
+              </Button>
+            </div>
+            {!location?.regie &&
+              (entry.regieHours ? (
+                <div className="mt-3 flex items-end gap-2">
+                  <label className="block flex-1">
+                    <span className="mb-1 block text-base font-semibold text-gray-800">Waarvan regie</span>
+                    <select
+                      className={selectClass}
+                      value={entry.regieHours}
+                      onChange={(e) => change(index, (x) => withRegie(x, Number(e.target.value)))}
+                    >
+                      {Array.from({ length: Math.round(entry.hours / HOUR_STEP) }, (_, i) => (i + 1) * HOUR_STEP).map(
+                        (value) => (
+                          <option key={value} value={value}>
+                            {formatHours(value)} uur
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    aria-label="Geen regie"
+                    className="min-h-14 min-w-11 text-2xl text-gray-500"
+                    onClick={() => change(index, (x) => withRegie(x, 0))}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  className="mt-1 min-h-11 text-base"
+                  onClick={() => change(index, (x) => withRegie(x, Math.min(1, x.hours)))}
+                >
+                  Gedeeltelijk regie
+                </Button>
+              ))}
           </div>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <Button
-              variant="secondary"
-              className="w-16! text-2xl"
-              aria-label="Half uur minder"
-              disabled={entry.hours <= HOUR_STEP}
-              onClick={() => edit(day.entries.map((e, i) => (i === index ? { ...e, hours: e.hours - HOUR_STEP } : e)))}
-            >
-              −
-            </Button>
-            <span className="text-2xl font-bold">{formatHours(entry.hours)} uur</span>
-            <Button
-              variant="secondary"
-              className="w-16! text-2xl"
-              aria-label="Half uur meer"
-              disabled={entry.hours >= 24}
-              onClick={() => edit(day.entries.map((e, i) => (i === index ? { ...e, hours: e.hours + HOUR_STEP } : e)))}
-            >
-              +
-            </Button>
-          </div>
-        </div>
-      ))}
+        );
+      })}
 
-      {day.entries.length > 0 && total !== norm && (
+      {day.entries.length > 0 && total !== norm && !hasRegie(day, locationById) && (
         <Notice kind="warning">
           Let op: {formatHours(total)} uur in plaats van {formatHours(norm)}.
         </Notice>
@@ -431,6 +500,7 @@ function ToolsStep({ week }: { week: WeekRecord }) {
   const { tools, locations, weeks, saveWeek, saveTool, go } = useStore();
   const [text, setText] = useState('');
   const [suggesting, setSuggesting] = useState(false);
+  const [amount, setAmount] = useState('');
   const [locationId, setLocationId] = useState('');
   const [message, setMessage] = useState('');
 
@@ -470,8 +540,12 @@ function ToolsStep({ week }: { week: WeekRecord }) {
       await saveTool({ id, name: typed, description: '' });
     }
     setMessage('');
-    await save([...week.tools, { id: crypto.randomUUID(), toolId: id, locationId: chosenLocation, dates: [] }]);
+    await save([
+      ...week.tools,
+      { id: crypto.randomUUID(), toolId: id, locationId: chosenLocation, amount: amount.trim(), dates: [] },
+    ]);
     setText('');
+    setAmount('');
     setSuggesting(false);
   }
 
@@ -498,7 +572,7 @@ function ToolsStep({ week }: { week: WeekRecord }) {
       {message && <Notice kind="info">{message}</Notice>}
 
       {usages.map((usage) => (
-        <Card key={usage.id} className="space-y-3">
+        <Card key={usage.id} className="space-y-2">
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-lg font-bold">{toolById.get(usage.toolId)?.name}</p>
@@ -513,6 +587,13 @@ function ToolsStep({ week }: { week: WeekRecord }) {
               ✕
             </button>
           </div>
+          <Field
+            label="Hoeveelheid"
+            value={usage.amount ?? ''}
+            onChange={(e) => save(week.tools.map((u) => (u.id === usage.id ? { ...u, amount: e.target.value } : u)))}
+            placeholder="Bijvoorbeeld 3 of 12 m"
+            autoComplete="off"
+          />
         </Card>
       ))}
 
@@ -559,6 +640,13 @@ function ToolsStep({ week }: { week: WeekRecord }) {
                 <b>Nieuw:</b> “{typed}” staat nog niet in je lijst. Bij Toevoegen komt het erin.
               </p>
             )}
+            <Field
+              label="Hoeveelheid (hoeft niet)"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Bijvoorbeeld 3 of 12 m"
+              autoComplete="off"
+            />
             <select
               className={selectClass}
               value={chosenLocation}
@@ -588,10 +676,13 @@ function DocumentStep({ week }: { week: WeekRecord }) {
   const { settings, locations, tools, go, home } = useStore();
   const [error, setError] = useError();
   const [done, setDone] = useState('');
+  const [manualCopy, setManualCopy] = useState(false);
+  const sheet = useMemo(() => buildTimesheet({ week, settings, locations, tools }), [week, settings, locations, tools]);
 
+  const locationById = new Map(locations.map((l) => [l.id, l]));
   const wrongDays = weekDates(week).filter((d) => {
     const day = week.days[d];
-    return day && day.entries.length > 0 && dayTotal(day) !== settings.normHours;
+    return day && day.entries.length > 0 && dayTotal(day) !== settings.normHours && !hasRegie(day, locationById);
   });
   const total = weekTotal(week);
 
@@ -644,6 +735,19 @@ function DocumentStep({ week }: { week: WeekRecord }) {
     }
   }
 
+  /** For changes the app cannot make: the same content as plain text, to paste and edit elsewhere. */
+  async function copyText() {
+    setError('');
+    setDone('');
+    setManualCopy(false);
+    try {
+      await navigator.clipboard.writeText(timesheetText(sheet));
+      setDone('Tekst gekopieerd. Plak hem waar je wilt, bijvoorbeeld in Word, Excel of een notitie.');
+    } catch {
+      setManualCopy(true);
+    }
+  }
+
   return (
     <Page
       title="Maak document"
@@ -692,15 +796,35 @@ function DocumentStep({ week }: { week: WeekRecord }) {
           ))}
         </Notice>
       )}
+
+      <h2 className="pt-2 text-xl font-bold">Voorbeeld</h2>
+      <TimesheetPreview sheet={sheet} />
+
       <ErrorNotice error={error} />
       {done && <Notice kind="ok">{done}</Notice>}
-
       <Button className="min-h-20 text-xl" onClick={share} disabled={!file}>
         {file ? 'Deel urenstaat (PDF)' : 'Bezig…'}
       </Button>
       <Button variant="secondary" onClick={save} disabled={!file}>
         Opslaan op telefoon
       </Button>
+      <Button variant="secondary" onClick={copyText}>
+        Kopieer als tekst
+      </Button>
+      {manualCopy && (
+        <Card className="space-y-2">
+          <p className="text-base">
+            Kopiëren lukte niet vanzelf. Houd je vinger op de tekst hieronder, kies Alles selecteren en dan Kopiëren.
+          </p>
+          <textarea
+            readOnly
+            rows={10}
+            value={timesheetText(sheet)}
+            onFocus={(e) => e.target.select()}
+            className="w-full rounded-xl border-2 border-gray-300 p-2 font-mono text-sm"
+          />
+        </Card>
+      )}
     </Page>
   );
 }

@@ -5,7 +5,8 @@
  *    A stay counts for the location it matches; travel and work-related
  *    stops count for the location they lead to.
  * 2. proposeHours: split the workday norm (8 h) over the day's locations in
- *    half-hour steps, in proportion to the measured time.
+ *    half-hour steps, in proportion to the measured time. A regie location gets
+ *    its measured time rounded up instead; the other locations share the rest.
  */
 import type {
   DayRecord,
@@ -18,7 +19,7 @@ import type {
   WorkLocation,
 } from '../types';
 import { matchLocation, nearestWithin } from './geo';
-import { atLocalHourMs, dateKeyOf, isWeekend } from './tz';
+import { addDays, atLocalHourMs, dateKeyOf, isWeekend, startOfDayMs } from './tz';
 import { weekDates } from './week';
 
 /** A location needs at least this much measured time to get an hour. */
@@ -65,13 +66,17 @@ export function measureWeek(
   const places = options.places ?? [];
   const ms: Record<string, Record<string, number>> = {};
   const windows = new Map<string, { start: number; end: number }>();
+  // Regie is paid per hour, so at a regie location the whole day counts, not only working hours.
+  const wholeDays = new Map<string, { start: number; end: number }>();
   for (const date of dates) {
     ms[date] = {};
     windows.set(date, {
       start: atLocalHourMs(date, options.workStartHour),
       end: atLocalHourMs(date, options.workEndHour),
     });
+    wholeDays.set(date, { start: startOfDayMs(date), end: startOfDayMs(addDays(date, 1)) });
   }
+  const windowsFor = (location: WorkLocation) => (location.regie ? wholeDays : windows);
   const unknown: UnknownVisit[] = [];
   const add = (date: string, locationId: string, value: number) => {
     if (value > 0) ms[date][locationId] = (ms[date][locationId] ?? 0) + value;
@@ -100,14 +105,14 @@ export function measureWeek(
       return;
     }
 
-    // Time at the location, per day, within working hours.
-    for (const [date, window] of windows) {
+    // Time at the location, per day, within working hours (whole day for regie).
+    for (const [date, window] of windowsFor(stay.location)) {
       add(date, stay.location.id, overlapMs(stay.startMs, stay.endMs, window.start, window.end));
     }
 
     // The way there: travel since the previous stay, plus any work-related stops
     // (builders' merchant, workshop) made on the way. Same day, within working hours.
-    const window = windows.get(startDate);
+    const window = windowsFor(stay.location).get(startDate);
     if (!window) return;
     let first = index;
     while (first > 0 && stays[first - 1].place?.kind === 'work' && stays[first - 1].startMs >= window.start) {
@@ -131,16 +136,48 @@ export function measureWeek(
 }
 
 /**
- * Splits `normHours` over the locations in steps of half an hour.
- * - One location: it gets all hours.
- * - Several: in proportion to the measured minutes; every location with at
- *   least 20 measured minutes gets at least 1 hour, shorter ones are dropped.
- * - The total is always exactly `normHours`.
+ * Hours for a regie location: the measured time rounded up to a half hour, except that
+ * a day just over the norm (by less than half an hour) is written down as the norm.
+ * 7 h 10 min → 7,5 · 8 h 20 min → 8 · 8 h 40 min → 9 (with a norm of 8).
  */
-export function proposeHours(minutesByLocation: Record<string, number>, normHours: number): HourEntry[] {
+export function regieHours(minutes: number, normHours: number): number {
+  const normMinutes = normHours * 60;
+  if (minutes > normMinutes && minutes < normMinutes + HOUR_STEP * 60) return normHours;
+  return Math.ceil(minutes / (HOUR_STEP * 60)) * HOUR_STEP;
+}
+
+/**
+ * Proposes the hours for one day, in steps of half an hour.
+ * - Regie locations get their measured time rounded up (see regieHours).
+ * - The other locations share what is left of `normHours`:
+ *   - one location gets all of it;
+ *   - several get it in proportion to the measured minutes; every location with at
+ *     least 20 measured minutes gets at least 1 hour (or what is left, if less).
+ * - Locations with less than 20 measured minutes are dropped.
+ * - Without regie, the total is always exactly `normHours`.
+ */
+export function proposeHours(
+  minutesByLocation: Record<string, number>,
+  normHours: number,
+  regie: ReadonlySet<string> = new Set(),
+): HourEntry[] {
+  const counted = Object.entries(minutesByLocation).filter(([, minutes]) => minutes >= MIN_MINUTES_FOR_HOUR);
+  const regieEntries = counted
+    .filter(([id]) => regie.has(id))
+    .map(([locationId, minutes]) => ({ locationId, hours: regieHours(minutes, normHours), measuredMinutes: minutes }));
+  const regieTotal = regieEntries.reduce((sum, e) => sum + e.hours, 0);
+  const others = Object.fromEntries(counted.filter(([id]) => !regie.has(id)));
+  return [...regieEntries, ...splitHours(others, normHours - regieTotal)].sort(
+    (a, b) => b.measuredMinutes - a.measuredMinutes || a.locationId.localeCompare(b.locationId),
+  );
+}
+
+/** Splits `hours` over the locations in proportion to their minutes (see proposeHours). */
+function splitHours(minutesByLocation: Record<string, number>, hours: number): HourEntry[] {
   // Work in whole steps (half hours) so the arithmetic stays exact.
-  const norm = Math.max(0, Math.round(normHours / HOUR_STEP));
-  const minimum = Math.round(MIN_HOURS_PER_LOCATION / HOUR_STEP);
+  const norm = Math.max(0, Math.round(hours / HOUR_STEP));
+  if (norm === 0) return [];
+  const minimum = Math.min(norm, Math.round(MIN_HOURS_PER_LOCATION / HOUR_STEP));
   const candidates = Object.entries(minutesByLocation)
     .filter(([, minutes]) => minutes >= MIN_MINUTES_FOR_HOUR)
     .map(([locationId, minutes]) => ({ locationId, minutes }))
@@ -203,6 +240,7 @@ export function applyProposals(
   places: MarkedPlace[] = [],
 ): { week: WeekRecord; unknown: UnknownVisit[] } {
   const workdays = workdaysOf(week);
+  const regie = new Set(locations.filter((l) => l.regie).map((l) => l.id));
   const measure = measureWeek(week.visits, week.travels, locations, workdays, { ...settings, places });
   const days: Record<string, DayRecord> = { ...week.days };
 
@@ -215,7 +253,7 @@ export function applyProposals(
         entries: existing.entries.map((e) => ({ ...e, measuredMinutes: minutes[e.locationId] ?? 0 })),
       };
     } else if (week.importedAt !== null) {
-      days[date] = { date, manual: false, entries: proposeHours(minutes, settings.normHours) };
+      days[date] = { date, manual: false, entries: proposeHours(minutes, settings.normHours, regie) };
     }
   }
   return { week: { ...week, days }, unknown: measure.unknown };

@@ -83,6 +83,33 @@ export function Field({
   );
 }
 
+export function Checkbox({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  onChange(checked: boolean): void;
+}) {
+  return (
+    <label className="flex min-h-14 cursor-pointer items-start gap-3 rounded-xl border-2 border-gray-300 bg-white p-3">
+      <input
+        type="checkbox"
+        className="mt-0.5 h-6 w-6 shrink-0 accent-emerald-700"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span>
+        <span className="block text-lg font-semibold text-gray-800">{label}</span>
+        {hint && <span className="mt-1 block text-sm text-gray-600">{hint}</span>}
+      </span>
+    </label>
+  );
+}
+
 export function Notice({ kind, children }: { kind: 'error' | 'warning' | 'ok' | 'info'; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   // An error often appears outside the part of the screen he is looking at (for example at the

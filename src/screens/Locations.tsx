@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, ErrorNotice, Field, Notice, Page, useError } from '../components/ui';
+import { Button, Card, Checkbox, ErrorNotice, Field, Notice, Page, useError } from '../components/ui';
 import { currentPosition, searchAddress, type AddressResult } from '../lib/device';
 import { byWerknummer, locationLabel } from '../lib/location';
 import { findByName, searchByName } from '../lib/search';
@@ -17,6 +17,7 @@ export function Locations() {
       <div>
         <p className="text-lg font-bold">{locationLabel(location)}</p>
         <p className="text-base text-gray-700">{location.address}</p>
+        {location.regie && <p className="text-base font-semibold text-emerald-800">Altijd regie</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Button variant="secondary" onClick={() => go({ name: 'location', id: location.id })}>
@@ -88,6 +89,7 @@ export function LocationForm({
   const [name, setName] = useState(existing?.name ?? preset?.name ?? '');
   const [address, setAddress] = useState(existing?.address ?? preset?.address ?? '');
   const [radius, setRadius] = useState(existing?.radius ?? DEFAULT_RADIUS);
+  const [regie, setRegie] = useState(existing?.regie ?? false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     existing ? { lat: existing.lat, lng: existing.lng } : (preset ?? null),
   );
@@ -150,6 +152,7 @@ export function LocationForm({
       lng: coords.lng,
       radius: Math.min(5000, Math.max(25, Math.round(Number(radius) || DEFAULT_RADIUS))),
       archived: existing?.archived ?? false,
+      regie,
     });
     back();
   }
@@ -168,6 +171,12 @@ export function LocationForm({
           hint="Nog niet bekend? Laat het leeg en vul het later in."
         />
         <Field label="Naam" value={name} onChange={(e) => setName(e.target.value)} hint="Bijvoorbeeld: Verbouwing fam. Jansen" />
+        <Checkbox
+          label="Altijd regie"
+          checked={regie}
+          onChange={setRegie}
+          hint="De klant betaalt per uur. De uren worden de gemeten tijd, naar boven afgerond op een half uur, ook buiten werktijd. Is maar een deel regie? Dat stel je per dag in bij Controleer uren."
+        />
         <Field
           label="Adres"
           value={address}
