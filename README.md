@@ -1,6 +1,6 @@
-# Urenstaat
+# Uurwerk
 
-A small installable web app (PWA) that turns a Google Maps Timeline export into a weekly timesheet PDF: hours per job number (werknummer) and the materials used. Built for one self-employed carpenter on an Android phone. The interface is in Dutch.
+A small installable web app (PWA), called **Uurwerk** on the phone, that turns a Google Maps Timeline export into a weekly timesheet PDF: hours per job number (werknummer) and the materials used. Built for one self-employed carpenter on an Android phone. The interface is in Dutch.
 
 Everything is stored on the phone (IndexedDB). There is no server and no account. The only network request the app makes is the address search (OpenStreetMap Nominatim), which sends the typed address and nothing else.
 
@@ -45,6 +45,7 @@ Code layout:
 - `src/lib/db.ts` – IndexedDB, backup and restore
 - `src/screens/` – the screens
 - `public/sw.js` – offline cache and Android share target
+- `design/` – the app icon (a clock with a folding ruler as hands) as SVG, the source of the PNGs in `public/icons/`. A new icon needs new PNG file names, or Chrome keeps showing the old one.
 
 ### About the sample export
 
