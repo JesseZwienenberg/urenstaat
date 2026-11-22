@@ -1,0 +1,979 @@
+{
+  "semanticSegments": [
+    {
+      "startTime": "2026-11-08T18:00:00.000+01:00",
+      "endTime": "2026-11-09T07:05:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_home",
+          "semanticType": "HOME",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0907000°, 5.1214000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-09T07:05:00.000+01:00",
+      "endTime": "2026-11-09T07:40:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-09T07:05:00.000+01:00"
+        },
+        {
+          "point": "52.1561000°, 5.3878000°",
+          "time": "2026-11-09T07:40:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-09T07:05:00.000+01:00",
+      "endTime": "2026-11-09T07:40:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "end": {
+          "latLng": "52.1561000°, 5.3878000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-09T07:40:00.000+01:00",
+      "endTime": "2026-11-09T16:05:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_jobA",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.1561000°, 5.3878000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-09T16:05:00.000+01:00",
+      "endTime": "2026-11-09T16:40:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.1561000°, 5.3878000°",
+          "time": "2026-11-09T16:05:00.000+01:00"
+        },
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-09T16:40:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-09T16:05:00.000+01:00",
+      "endTime": "2026-11-09T16:40:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.1561000°, 5.3878000°"
+        },
+        "end": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-09T16:40:00.000+01:00",
+      "endTime": "2026-11-16T07:05:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_home",
+          "semanticType": "HOME",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0907000°, 5.1214000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-16T07:05:00.000+01:00",
+      "endTime": "2026-11-16T07:40:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-16T07:05:00.000+01:00"
+        },
+        {
+          "point": "52.1561000°, 5.3878000°",
+          "time": "2026-11-16T07:40:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-16T07:05:00.000+01:00",
+      "endTime": "2026-11-16T07:40:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "end": {
+          "latLng": "52.1561000°, 5.3878000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-16T07:40:00.000+01:00",
+      "endTime": "2026-11-16T16:10:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_jobA",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.1561000°, 5.3878000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-16T16:10:00.000+01:00",
+      "endTime": "2026-11-16T16:45:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.1561000°, 5.3878000°",
+          "time": "2026-11-16T16:10:00.000+01:00"
+        },
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-16T16:45:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-16T16:10:00.000+01:00",
+      "endTime": "2026-11-16T16:45:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.1561000°, 5.3878000°"
+        },
+        "end": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-16T16:45:00.000+01:00",
+      "endTime": "2026-11-17T07:10:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_home",
+          "semanticType": "HOME",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0907000°, 5.1214000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-17T07:10:00.000+01:00",
+      "endTime": "2026-11-17T07:42:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-17T07:10:00.000+01:00"
+        },
+        {
+          "point": "52.1561000°, 5.3878000°",
+          "time": "2026-11-17T07:42:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-17T07:10:00.000+01:00",
+      "endTime": "2026-11-17T07:42:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "end": {
+          "latLng": "52.1561000°, 5.3878000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-17T07:42:00.000+01:00",
+      "endTime": "2026-11-17T11:30:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_jobA",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.1561000°, 5.3878000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-17T11:30:00.000+01:00",
+      "endTime": "2026-11-17T12:10:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.1561000°, 5.3878000°",
+          "time": "2026-11-17T11:30:00.000+01:00"
+        },
+        {
+          "point": "52.0116000°, 5.0450000°",
+          "time": "2026-11-17T12:10:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-17T11:30:00.000+01:00",
+      "endTime": "2026-11-17T12:10:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.1561000°, 5.3878000°"
+        },
+        "end": {
+          "latLng": "52.0116000°, 5.0450000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-17T12:10:00.000+01:00",
+      "endTime": "2026-11-17T16:00:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_jobB",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0116000°, 5.0450000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-17T16:00:00.000+01:00",
+      "endTime": "2026-11-17T16:25:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0116000°, 5.0450000°",
+          "time": "2026-11-17T16:00:00.000+01:00"
+        },
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-17T16:25:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-17T16:00:00.000+01:00",
+      "endTime": "2026-11-17T16:25:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0116000°, 5.0450000°"
+        },
+        "end": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-17T16:25:00.000+01:00",
+      "endTime": "2026-11-18T07:00:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_home",
+          "semanticType": "HOME",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0907000°, 5.1214000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-18T07:00:00.000+01:00",
+      "endTime": "2026-11-18T07:20:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-18T07:00:00.000+01:00"
+        },
+        {
+          "point": "52.1012000°, 5.0627000°",
+          "time": "2026-11-18T07:20:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-18T07:00:00.000+01:00",
+      "endTime": "2026-11-18T07:20:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "end": {
+          "latLng": "52.1012000°, 5.0627000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-18T07:20:00.000+01:00",
+      "endTime": "2026-11-18T07:50:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_bouwmarkt",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.1012000°, 5.0627000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-18T07:50:00.000+01:00",
+      "endTime": "2026-11-18T08:20:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.1012000°, 5.0627000°",
+          "time": "2026-11-18T07:50:00.000+01:00"
+        },
+        {
+          "point": "52.0116000°, 5.0450000°",
+          "time": "2026-11-18T08:20:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-18T07:50:00.000+01:00",
+      "endTime": "2026-11-18T08:20:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.1012000°, 5.0627000°"
+        },
+        "end": {
+          "latLng": "52.0116000°, 5.0450000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-18T08:20:00.000+01:00",
+      "endTime": "2026-11-18T16:30:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_jobB",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0116000°, 5.0450000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-18T16:30:00.000+01:00",
+      "endTime": "2026-11-18T16:55:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0116000°, 5.0450000°",
+          "time": "2026-11-18T16:30:00.000+01:00"
+        },
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-18T16:55:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-18T16:30:00.000+01:00",
+      "endTime": "2026-11-18T16:55:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0116000°, 5.0450000°"
+        },
+        "end": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-18T16:55:00.000+01:00",
+      "endTime": "2026-11-19T07:00:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_home",
+          "semanticType": "HOME",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0907000°, 5.1214000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-19T07:00:00.000+01:00",
+      "endTime": "2026-11-19T07:15:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-19T07:00:00.000+01:00"
+        },
+        {
+          "point": "52.1203000°, 5.2501000°",
+          "time": "2026-11-19T07:15:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-19T07:00:00.000+01:00",
+      "endTime": "2026-11-19T07:15:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "end": {
+          "latLng": "52.1203000°, 5.2501000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-19T07:15:00.000+01:00",
+      "endTime": "2026-11-19T07:25:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_tankstation",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.1203000°, 5.2501000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-19T07:25:00.000+01:00",
+      "endTime": "2026-11-19T07:45:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.1203000°, 5.2501000°",
+          "time": "2026-11-19T07:25:00.000+01:00"
+        },
+        {
+          "point": "52.1561000°, 5.3878000°",
+          "time": "2026-11-19T07:45:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-19T07:25:00.000+01:00",
+      "endTime": "2026-11-19T07:45:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.1203000°, 5.2501000°"
+        },
+        "end": {
+          "latLng": "52.1561000°, 5.3878000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-19T07:45:00.000+01:00",
+      "endTime": "2026-11-19T15:40:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_jobA",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.1561000°, 5.3878000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-19T15:40:00.000+01:00",
+      "endTime": "2026-11-19T16:15:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.1561000°, 5.3878000°",
+          "time": "2026-11-19T15:40:00.000+01:00"
+        },
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-19T16:15:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-19T15:40:00.000+01:00",
+      "endTime": "2026-11-19T16:15:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.1561000°, 5.3878000°"
+        },
+        "end": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-19T16:15:00.000+01:00",
+      "endTime": "2026-11-20T07:05:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_home",
+          "semanticType": "HOME",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0907000°, 5.1214000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-20T07:05:00.000+01:00",
+      "endTime": "2026-11-20T07:40:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-20T07:05:00.000+01:00"
+        },
+        {
+          "point": "52.1561000°, 5.3878000°",
+          "time": "2026-11-20T07:40:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-20T07:05:00.000+01:00",
+      "endTime": "2026-11-20T07:40:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "end": {
+          "latLng": "52.1561000°, 5.3878000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-20T07:40:00.000+01:00",
+      "endTime": "2026-11-20T12:00:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_jobA",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.1561000°, 5.3878000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-20T12:00:00.000+01:00",
+      "endTime": "2026-11-20T12:25:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.1561000°, 5.3878000°",
+          "time": "2026-11-20T12:00:00.000+01:00"
+        },
+        {
+          "point": "52.0116000°, 5.0450000°",
+          "time": "2026-11-20T12:25:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-20T12:00:00.000+01:00",
+      "endTime": "2026-11-20T12:25:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.1561000°, 5.3878000°"
+        },
+        "end": {
+          "latLng": "52.0116000°, 5.0450000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-20T12:25:00.000+01:00",
+      "endTime": "2026-11-20T12:40:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_jobB",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0116000°, 5.0450000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-20T12:40:00.000+01:00",
+      "endTime": "2026-11-20T13:05:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0116000°, 5.0450000°",
+          "time": "2026-11-20T12:40:00.000+01:00"
+        },
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-20T13:05:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-20T12:40:00.000+01:00",
+      "endTime": "2026-11-20T13:05:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0116000°, 5.0450000°"
+        },
+        "end": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-20T13:05:00.000+01:00",
+      "endTime": "2026-11-21T09:30:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_home",
+          "semanticType": "HOME",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0907000°, 5.1214000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-21T09:30:00.000+01:00",
+      "endTime": "2026-11-21T09:45:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-21T09:30:00.000+01:00"
+        },
+        {
+          "point": "52.0789000°, 5.1466000°",
+          "time": "2026-11-21T09:45:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-21T09:30:00.000+01:00",
+      "endTime": "2026-11-21T09:45:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "end": {
+          "latLng": "52.0789000°, 5.1466000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-21T09:45:00.000+01:00",
+      "endTime": "2026-11-21T11:30:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_sportpark",
+          "semanticType": "UNKNOWN",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0789000°, 5.1466000°"
+          }
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-21T11:30:00.000+01:00",
+      "endTime": "2026-11-21T11:45:00.000+01:00",
+      "timelinePath": [
+        {
+          "point": "52.0789000°, 5.1466000°",
+          "time": "2026-11-21T11:30:00.000+01:00"
+        },
+        {
+          "point": "52.0907000°, 5.1214000°",
+          "time": "2026-11-21T11:45:00.000+01:00"
+        }
+      ]
+    },
+    {
+      "startTime": "2026-11-21T11:30:00.000+01:00",
+      "endTime": "2026-11-21T11:45:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "activity": {
+        "start": {
+          "latLng": "52.0789000°, 5.1466000°"
+        },
+        "end": {
+          "latLng": "52.0907000°, 5.1214000°"
+        },
+        "distanceMeters": 21500.5,
+        "probability": 0.93,
+        "topCandidate": {
+          "type": "IN_PASSENGER_VEHICLE",
+          "probability": 0.91
+        }
+      }
+    },
+    {
+      "startTime": "2026-11-21T11:45:00.000+01:00",
+      "endTime": "2026-11-22T23:30:00.000+01:00",
+      "startTimeTimezoneUtcOffsetMinutes": 60,
+      "endTimeTimezoneUtcOffsetMinutes": 60,
+      "visit": {
+        "hierarchyLevel": 0,
+        "probability": 0.87,
+        "topCandidate": {
+          "placeId": "ChIJfake_home",
+          "semanticType": "HOME",
+          "probability": 0.74,
+          "placeLocation": {
+            "latLng": "52.0907000°, 5.1214000°"
+          }
+        }
+      }
+    }
+  ],
+  "rawSignals": [
+    {
+      "position": {
+        "LatLng": "52.0907000°, 5.1214000°",
+        "accuracyMeters": 13,
+        "altitudeMeters": 4.2,
+        "source": "WIFI",
+        "timestamp": "2026-11-22T10:00:00.000+01:00",
+        "speedMetersPerSecond": 0
+      }
+    }
+  ],
+  "userLocationProfile": {
+    "frequentPlaces": [
+      {
+        "placeId": "ChIJfake_home",
+        "placeLocation": "52.0907000°, 5.1214000°",
+        "label": "HOME"
+      }
+    ]
+  }
+}
