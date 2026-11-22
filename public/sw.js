@@ -5,24 +5,38 @@ const ASSETS = self.__ASSETS__ || ['./'];
 const CACHE = `urenstaat-${VERSION}`;
 const SHARE_CACHE = 'urenstaat-share';
 
+/**
+ * Stores this version's files. They are fetched past the browser's own HTTP cache
+ * (cache: 'reload'): from there the start page could still be the previous version's,
+ * pointing to files the host has already deleted, which left the app blank.
+ * As a last check, the stored start page must refer only to files of this version;
+ * if not, the install fails and the browser tries again later, keeping the old version.
+ */
+async function precache() {
+  const cache = await caches.open(CACHE);
+  await cache.addAll(ASSETS.map((url) => new Request(url, { cache: 'reload' })));
+  const page = await (await cache.match('./')).text();
+  const refs = [...page.matchAll(/(?:src|href)="(\.\/[^"]+)"/g)].map((m) => m[1]);
+  if (refs.some((ref) => !ASSETS.includes(ref))) {
+    await caches.delete(CACHE);
+    throw new Error('The start page does not belong to this version');
+  }
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(precache().then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) =>
-        Promise.all(
-          keys.filter((k) => k !== CACHE && k !== SHARE_CACHE).map((k) => caches.delete(k)),
-        ),
-      )
+      .then((keys) => {
+        // Keep the version just before this one (keys are in the order they were made):
+        // a screen still open from it may load one of its files later, like the PDF code.
+        const old = keys.filter((k) => k !== CACHE && k !== SHARE_CACHE);
+        return Promise.all(old.slice(0, -1).map((k) => caches.delete(k)));
+      })
       .then(() => self.clients.claim()),
   );
 });
@@ -60,10 +74,11 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
       // ignoreVary: some hosts add Vary headers that would otherwise make offline lookups miss.
-      const cached = await cache.match(request, {
-        ignoreSearch: request.mode === 'navigate',
-        ignoreVary: true,
-      });
+      const options = { ignoreSearch: request.mode === 'navigate', ignoreVary: true };
+      // The start page always comes from this version; other files may also come from the previous one.
+      const cached =
+        (await cache.match(request, options)) ||
+        (request.mode === 'navigate' ? undefined : await caches.match(request, options));
       if (cached) return cached;
       try {
         return await fetch(request);
