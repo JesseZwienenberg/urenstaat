@@ -92,17 +92,49 @@ function parseRange(start: unknown, end: unknown): { startMs: number; endMs: num
   return { startMs, endMs };
 }
 
+/** What Google calls the place type, in Dutch, where that is useful as a name. */
+const SEMANTIC_NAMES: Record<string, string> = {
+  HOME: 'Thuis',
+  INFERRED_HOME: 'Thuis',
+  WORK: 'Werk',
+  INFERRED_WORK: 'Werk',
+};
+
+const text = (value: unknown) => (typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined);
+
+/**
+ * Name and address of a place, as far as the export has them. The current
+ * Android export normally only says whether a place is home or work; older
+ * exports carried a real name and address.
+ */
+function placeDetails(source: unknown): { name?: string; address?: string } {
+  if (!isObject(source)) return {};
+  const location = isObject(source.placeLocation) ? source.placeLocation : {};
+  const semantic = typeof source.semanticType === 'string' ? SEMANTIC_NAMES[source.semanticType.toUpperCase()] : undefined;
+  return {
+    name: text(source.name) ?? text(location.name) ?? semantic,
+    address: text(source.address) ?? text(location.address),
+  };
+}
+
 class Collector {
   private visitKeys = new Set<string>();
   private travelKeys = new Set<string>();
   readonly visits: Visit[] = [];
   readonly travels: Travel[] = [];
 
-  addVisit(range: { startMs: number; endMs: number }, coords: { lat: number; lng: number }) {
+  addVisit(
+    range: { startMs: number; endMs: number },
+    coords: { lat: number; lng: number },
+    details: { name?: string; address?: string } = {},
+  ) {
     const key = `${range.startMs}|${range.endMs}|${coords.lat.toFixed(5)}|${coords.lng.toFixed(5)}`;
     if (this.visitKeys.has(key)) return;
     this.visitKeys.add(key);
-    this.visits.push({ ...range, ...coords });
+    const visit: Visit = { ...range, ...coords };
+    if (details.name) visit.name = details.name;
+    if (details.address) visit.address = details.address;
+    this.visits.push(visit);
   }
 
   addTravel(range: { startMs: number; endMs: number }) {
@@ -131,7 +163,7 @@ function readSegments(segments: unknown[], out: Collector) {
       if (typeof visit.hierarchyLevel === 'number' && visit.hierarchyLevel > 0) continue;
       const candidate = isObject(visit.topCandidate) ? visit.topCandidate : visit;
       const coords = parseLatLng(candidate.placeLocation) ?? parseLatLng(candidate.location);
-      if (coords) out.addVisit(range, coords);
+      if (coords) out.addVisit(range, coords, placeDetails(candidate));
     } else if (isObject(segment.activity)) {
       out.addTravel(range);
     }
@@ -147,7 +179,7 @@ function readTimelineObjects(objects: unknown[], out: Collector) {
       const duration = isObject(object.placeVisit.duration) ? object.placeVisit.duration : {};
       const range = parseRange(duration.startTimestamp, duration.endTimestamp);
       const coords = parseLatLng(object.placeVisit.location);
-      if (range && coords) out.addVisit(range, coords);
+      if (range && coords) out.addVisit(range, coords, placeDetails(object.placeVisit.location));
     } else if (isObject(object.activitySegment)) {
       const duration = isObject(object.activitySegment.duration)
         ? object.activitySegment.duration

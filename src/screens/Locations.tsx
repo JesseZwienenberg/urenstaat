@@ -77,12 +77,18 @@ export function Locations() {
   );
 }
 
-export function LocationForm({ id, preset }: { id?: string; preset?: { lat: number; lng: number } }) {
+export function LocationForm({
+  id,
+  preset,
+}: {
+  id?: string;
+  preset?: { lat: number; lng: number; name?: string; address?: string };
+}) {
   const { locations, saveLocation, back } = useStore();
   const existing = locations.find((l) => l.id === id);
   const [werknummer, setWerknummer] = useState(existing?.werknummer ?? '');
-  const [name, setName] = useState(existing?.name ?? '');
-  const [address, setAddress] = useState(existing?.address ?? '');
+  const [name, setName] = useState(existing?.name ?? preset?.name ?? '');
+  const [address, setAddress] = useState(existing?.address ?? preset?.address ?? '');
   const [radius, setRadius] = useState(existing?.radius ?? DEFAULT_RADIUS);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     existing ? { lat: existing.lat, lng: existing.lng } : (preset ?? null),
@@ -236,7 +242,7 @@ export function ToolsScreen() {
   }
 
   return (
-    <Page title="Gereedschap" footer={editing ? undefined : <Button onClick={() => start(null)}>+ Nieuw gereedschap</Button>}>
+    <Page title="Materialen" footer={editing ? undefined : <Button onClick={() => start(null)}>+ Nieuw materiaal</Button>}>
       {editing && (
         <Card className="space-y-4">
           <Field label="Naam" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
@@ -251,7 +257,7 @@ export function ToolsScreen() {
           </div>
         </Card>
       )}
-      {sorted.length === 0 && !editing && <p className="text-gray-600">Nog geen gereedschap in je lijst.</p>}
+      {sorted.length === 0 && !editing && <p className="text-gray-600">Nog geen materialen in je lijst.</p>}
       {sorted.map((tool) => (
         <Card key={tool.id} className="space-y-3">
           <div>

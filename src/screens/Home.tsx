@@ -5,7 +5,7 @@ import { canShareFile, downloadFile, shareFile } from '../lib/device';
 import { formatDate, formatHours } from '../lib/format';
 import { emptyWeek, weekTotal } from '../lib/hours';
 import { todayKey } from '../lib/tz';
-import { previousWeekOf, shiftWeek, weekDates, weekId, type IsoWeek } from '../lib/week';
+import { isoWeekOf, shiftWeek, weekDates, weekId, type IsoWeek } from '../lib/week';
 import { useStore } from '../store';
 
 export function Home() {
@@ -31,7 +31,7 @@ export function Home() {
           Locaties
         </Button>
         <Button variant="secondary" className="px-1 text-base" onClick={() => go({ name: 'tools' })}>
-          Gereed&shy;schap
+          Materi&shy;alen
         </Button>
         <Button variant="secondary" className="px-1 text-base" onClick={() => go({ name: 'settings' })}>
           Instel&shy;lingen
@@ -65,10 +65,10 @@ export function Home() {
   );
 }
 
-/** Step 1: choose the week. Defaults to last week. */
+/** Step 1: choose the week. Defaults to the current week. */
 export function PickWeek() {
   const { weeks, saveWeek, go } = useStore();
-  const [week, setWeek] = useState<IsoWeek>(() => previousWeekOf(todayKey()));
+  const [week, setWeek] = useState<IsoWeek>(() => isoWeekOf(todayKey()));
   const dates = weekDates(week);
   const id = weekId(week);
   const exists = id in weeks;

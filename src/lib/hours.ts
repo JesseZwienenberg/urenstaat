@@ -94,7 +94,8 @@ export function measureWeek(
       // Unmarked places are listed for review, but only if he was there during working hours.
       const window = windows.get(startDate);
       if (!stay.place && window && overlapMs(stay.startMs, stay.endMs, window.start, window.end) > 0) {
-        unknown.push({ startMs: stay.startMs, endMs: stay.endMs, lat: stay.lat, lng: stay.lng, date: startDate });
+        const { location: _location, place: _place, ...visit } = stay;
+        unknown.push({ ...visit, date: startDate });
       }
       return;
     }

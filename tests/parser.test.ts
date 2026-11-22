@@ -86,6 +86,23 @@ describe('parseTimeline', () => {
     expect(timeline.visits).toHaveLength(1);
   });
 
+  it('picks up what the export says about a place', () => {
+    const timeline = parseTimelineText(sampleText);
+    expect(timeline.visits[0].name).toBe('Thuis'); // semanticType HOME
+    expect(timeline.visits.find((v) => Math.abs(v.lat - 52.1561) < 0.0001)?.name).toBeUndefined();
+    const old = parseTimeline({
+      timelineObjects: [
+        {
+          placeVisit: {
+            location: { latitudeE7: 521012000, longitudeE7: 50627000, name: 'Bouwmarkt Jansen', address: 'Industrieweg 4, Utrecht' },
+            duration: { startTimestamp: '2023-05-01T06:00:00Z', endTimestamp: '2023-05-01T07:00:00Z' },
+          },
+        },
+      ],
+    });
+    expect(old.visits[0]).toMatchObject({ name: 'Bouwmarkt Jansen', address: 'Industrieweg 4, Utrecht' });
+  });
+
   it('accepts placeLocation as a plain string', () => {
     const timeline = parseTimeline({
       semanticSegments: [

@@ -1,15 +1,15 @@
 # Urenstaat
 
-A small installable web app (PWA) that turns a Google Maps Timeline export into a weekly timesheet PDF: hours per job number (werknummer) and the tools used. Built for one self-employed carpenter on an Android phone. The interface is in Dutch.
+A small installable web app (PWA) that turns a Google Maps Timeline export into a weekly timesheet PDF: hours per job number (werknummer) and the materials used. Built for one self-employed carpenter on an Android phone. The interface is in Dutch.
 
 Everything is stored on the phone (IndexedDB). There is no server and no account. The only network request the app makes is the address search (OpenStreetMap Nominatim), which sends the typed address and nothing else.
 
 ## How it works
 
-1. **Kies week** – defaults to the previous ISO week.
+1. **Kies week** – defaults to the current ISO week.
 2. **Importeer Tijdlijn** – pick the exported JSON file, or share it into the app from Android. Only the selected week is used; importing the same file again changes nothing.
 3. **Controleer uren** – each workday gets a proposal of 8 in half-hour steps, split over the locations visited.
-4. **Vul gereedschap in** – tools per job number, with "Kopieer van vorige week".
+4. **Vul materialen in** – materials per job number, with "Kopieer van vorige week".
 5. **Maak document** – `Urenstaat week [nr] [jaar].pdf`, shared through the Android share sheet or saved.
 
 ### Hour rules

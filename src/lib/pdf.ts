@@ -81,7 +81,7 @@ export function buildPdf({ week, settings, locations, tools }: PdfInput): jsPDF 
     columnStyles: { 0: { cellWidth: 34 }, 1: { cellWidth: 34 }, 3: { cellWidth: 20, halign: 'right' } },
   });
 
-  // Table 2: Gebruikt gereedschap
+  // Table 2: Gebruikte materialen
   const afterHours = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
   let toolsY = afterHours + 12;
   if (toolsY > 260) {
@@ -90,7 +90,7 @@ export function buildPdf({ week, settings, locations, tools }: PdfInput): jsPDF 
   }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.text('Gebruikt gereedschap', MARGIN, toolsY);
+  doc.text('Gebruikte materialen', MARGIN, toolsY);
 
   const toolRows: RowInput[] = week.tools
     .filter((usage) => toolById.has(usage.toolId))
@@ -103,13 +103,13 @@ export function buildPdf({ week, settings, locations, tools }: PdfInput): jsPDF 
       ];
     });
   if (toolRows.length === 0) {
-    toolRows.push([{ content: 'Geen gereedschap ingevuld', colSpan: 3 }]);
+    toolRows.push([{ content: 'Geen materialen ingevuld', colSpan: 3 }]);
   }
 
   autoTable(doc, {
     ...tableStyle,
     startY: toolsY + 3,
-    head: [['Gereedschap', 'Werknummer', 'Adres']],
+    head: [['Materiaal', 'Werknummer', 'Adres']],
     body: toolRows,
     columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 34 } },
   });

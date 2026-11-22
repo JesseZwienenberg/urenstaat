@@ -15,7 +15,7 @@ export type Screen =
   | { name: 'pick-week' }
   | { name: 'week'; weekId: string; step: 2 | 3 | 4 | 5 }
   | { name: 'locations' }
-  | { name: 'location'; id?: string; preset?: { lat: number; lng: number } }
+  | { name: 'location'; id?: string; preset?: { lat: number; lng: number; name?: string; address?: string } }
   | { name: 'tools' }
   | { name: 'settings' }
   | { name: 'help' };

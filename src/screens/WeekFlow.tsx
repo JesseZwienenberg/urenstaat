@@ -208,6 +208,13 @@ function HoursStep({ week }: { week: WeekRecord }) {
         />
       ))}
 
+      <Button variant="secondary" onClick={() => go({ name: 'location' })}>
+        + Nieuwe werklocatie
+      </Button>
+      <p className="-mt-2 text-sm text-gray-600">
+        Klopt de Tijdlijn niet? Voeg de locatie hier toe en kies hem daarna bij de dag met “+ Locatie toevoegen”.
+      </p>
+
       {hiddenWeekend.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
           {hiddenWeekend.map((date) => (
@@ -237,7 +244,12 @@ function HoursStep({ week }: { week: WeekRecord }) {
               <UnknownItem
                 key={`${visit.startMs}-${visit.lat}`}
                 visit={visit}
-                onLocation={() => go({ name: 'location', preset: { lat: visit.lat, lng: visit.lng } })}
+                onLocation={() =>
+                  go({
+                    name: 'location',
+                    preset: { lat: visit.lat, lng: visit.lng, name: visit.name, address: visit.address },
+                  })
+                }
                 onMark={(place) => void savePlace(place)}
               />
             ))}
@@ -258,7 +270,8 @@ function UnknownItem({
   onMark(place: MarkedPlace): void;
 }) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState('');
+  // What the export says about this place, if anything, is offered as a suggestion.
+  const [name, setName] = useState(visit.name ?? '');
   const mark = (kind: MarkedPlace['kind']) =>
     onMark({
       id: crypto.randomUUID(),
@@ -275,6 +288,11 @@ function UnknownItem({
         {formatDayShort(visit.date)} · {timeOf(visit.startMs)}–{timeOf(visit.endMs)} (
         {formatMinutes((visit.endMs - visit.startMs) / 60_000)})
       </p>
+      {(visit.name || visit.address) && (
+        <p className="text-base text-gray-700">
+          Volgens je Tijdlijn: {[visit.name, visit.address].filter(Boolean).join(', ')}
+        </p>
+      )}
       {!open ? (
         <Button variant="secondary" className="text-base" onClick={() => setOpen(true)}>
           Wat is dit voor plek?
@@ -452,7 +470,7 @@ function ToolsStep({ week }: { week: WeekRecord }) {
     }
     if (!id || !chosenLocation) return;
     if (has(week.tools, id, chosenLocation)) {
-      setMessage('Dit gereedschap staat al bij dit werknummer.');
+      setMessage('Dit materiaal staat al bij dit werknummer.');
       return;
     }
     setMessage('');
@@ -474,7 +492,7 @@ function ToolsStep({ week }: { week: WeekRecord }) {
 
   return (
     <Page
-      title="Vul gereedschap in"
+      title="Vul materialen in"
       subtitle={`Stap 4 van 5 · ${weekTitle(week)}`}
       footer={<Button onClick={() => go({ name: 'week', weekId: week.id, step: 5 })}>Verder</Button>}
     >
@@ -503,22 +521,22 @@ function ToolsStep({ week }: { week: WeekRecord }) {
       ))}
 
       <Card className="space-y-3">
-        <h2 className="text-xl font-bold">Gereedschap toevoegen</h2>
+        <h2 className="text-xl font-bold">Materiaal toevoegen</h2>
         {options.length === 0 ? (
           <p className="text-base text-gray-700">Voeg eerst een werklocatie toe.</p>
         ) : (
           <>
-            <select className={selectClass} value={toolId} onChange={(e) => setToolId(e.target.value)} aria-label="Gereedschap">
-              <option value="">Kies gereedschap…</option>
+            <select className={selectClass} value={toolId} onChange={(e) => setToolId(e.target.value)} aria-label="Materiaal">
+              <option value="">Kies materiaal…</option>
               {sortedTools.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
                 </option>
               ))}
-              <option value="new">+ Nieuw gereedschap…</option>
+              <option value="new">+ Nieuw materiaal…</option>
             </select>
             {toolId === 'new' && (
-              <Field label="Naam nieuw gereedschap" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus />
+              <Field label="Naam nieuw materiaal" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus />
             )}
             <select
               className={selectClass}
@@ -614,7 +632,7 @@ function DocumentStep({ week }: { week: WeekRecord }) {
         <p className="text-base text-gray-600">Totaal deze week</p>
         <p className="text-4xl font-bold">{formatHours(total)} uur</p>
         <p className="text-base text-gray-600">
-          {week.tools.length} {week.tools.length === 1 ? 'regel' : 'regels'} gereedschap
+          {week.tools.length} {week.tools.length === 1 ? 'materiaal' : 'materialen'}
         </p>
       </Card>
 

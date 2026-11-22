@@ -63,6 +63,10 @@ export interface Visit {
   endMs: number;
   lat: number;
   lng: number;
+  /** Name of the place, when the export has one (or says it is home or work). */
+  name?: string;
+  /** Address of the place, when the export has one. */
+  address?: string;
 }
 
 /** A stretch of travel between two places, taken from the Timeline export. */
