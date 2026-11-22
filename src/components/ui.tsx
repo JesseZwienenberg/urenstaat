@@ -45,7 +45,8 @@ export function Page({
   const { back } = useStore();
   return (
     <div className="mx-auto flex min-h-dvh max-w-xl flex-col">
-      <header className="sticky top-0 z-10 bg-gray-800 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 text-white">
+      {/* select-none: a long press on the title should not select it. */}
+      <header className="sticky top-0 z-10 bg-gray-800 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 text-white select-none">
         {showBack && (
           <button type="button" onClick={back} className="-ml-2 mb-1 min-h-11 px-2 text-base text-gray-200">
             ‹ {backLabel}
@@ -112,16 +113,25 @@ export function Checkbox({
   );
 }
 
-export function Notice({ kind, children }: { kind: 'error' | 'warning' | 'ok' | 'info'; children: ReactNode }) {
+export function Notice({
+  kind,
+  reveal = false,
+  children,
+}: {
+  kind: 'error' | 'warning' | 'ok' | 'info';
+  /** Scroll into view when it appears. Errors always do. */
+  reveal?: boolean;
+  children: ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   // An error often appears outside the part of the screen he is looking at (for example at the
   // top of a long form after tapping "Opslaan" at the bottom), so bring it into view.
   useEffect(() => {
-    if (kind !== 'error' || !ref.current) return;
+    if ((kind !== 'error' && !reveal) || !ref.current) return;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     // "center" keeps it clear of the sticky header and footer.
     ref.current.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
-  }, [kind]);
+  }, [kind, reveal]);
   const styles = {
     error: 'border-red-300 bg-red-50 text-red-900',
     warning: 'border-amber-400 bg-amber-50 text-amber-900',
