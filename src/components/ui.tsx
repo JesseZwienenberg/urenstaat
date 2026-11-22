@@ -54,6 +54,7 @@ export function Page({
         )}
         <h1 className="text-2xl font-bold">{title}</h1>
         {subtitle && <p className="mt-0.5 text-base text-gray-300">{subtitle}</p>}
+        <div aria-hidden="true" className="duimstok-strip -mx-4 mt-3 -mb-3" />
       </header>
       <main className="flex-1 space-y-4 p-4">{children}</main>
       {footer && (

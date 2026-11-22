@@ -19,3 +19,14 @@ select,
 label {
   touch-action: manipulation;
 }
+
+/* The edge of a folding ruler (duimstok) under the title bar: a short tick every 8 px, a longer one every 40 px. */
+.duimstok-strip {
+  height: 6px;
+  background-color: #facc15;
+  background-image:
+    repeating-linear-gradient(90deg, rgb(31 41 55 / 0.8) 0 1.5px, transparent 1.5px 40px),
+    repeating-linear-gradient(90deg, rgb(31 41 55 / 0.45) 0 1px, transparent 1px 8px);
+  background-size: 100% 5px, 100% 3px;
+  background-repeat: no-repeat;
+}

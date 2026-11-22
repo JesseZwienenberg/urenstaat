@@ -130,7 +130,7 @@ export function SettingsScreen() {
     };
     setForm(next);
     await store.saveSettings(next);
-    show('ok', 'Instellingen opgeslagen.');
+    show('ok', 'Instellingen opgeslagen. Staat als een huis.');
   }
 
   async function backup() {

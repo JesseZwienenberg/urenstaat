@@ -35,6 +35,43 @@ function hasRegie(day: DayRecord, locationById: Map<string, WorkLocation>): bool
   return day.entries.some((e) => locationById.get(e.locationId)?.regie);
 }
 
+/** The day's hours on a small folding ruler: one mark per hour, yellow up to the total. */
+function DayRuler({ hours, norm }: { hours: number; norm: number }) {
+  const scale = Math.max(norm, Math.ceil(hours), 1);
+  return (
+    <div aria-hidden="true" className="relative h-2.5 overflow-hidden rounded-sm bg-gray-200">
+      <div className="h-full bg-yellow-400" style={{ width: `${(Math.min(hours, scale) / scale) * 100}%` }} />
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'linear-gradient(to right, transparent calc(100% - 1px), rgb(31 41 55 / 0.35) 0)',
+          backgroundSize: `${100 / scale}% 100%`,
+        }}
+      />
+    </div>
+  );
+}
+
+/** A spirit level: the bubble sits between the marks when every day has its hours, and drifts off when not. */
+function Waterpas({ tilt }: { tilt: -1 | 0 | 1 }) {
+  return (
+    <div
+      role="img"
+      aria-label={tilt === 0 ? 'Waterpas: alle dagen kloppen' : 'Waterpas: niet alle dagen kloppen'}
+      className="mx-auto mt-3 flex h-7 w-40 items-center justify-center rounded-md bg-yellow-400"
+    >
+      <div className="relative h-4 w-20 overflow-hidden rounded-full border border-lime-800/30 bg-lime-200">
+        <div className="absolute inset-y-0 left-[calc(50%-11px)] w-px bg-gray-800/50" />
+        <div className="absolute inset-y-0 left-[calc(50%+10px)] w-px bg-gray-800/50" />
+        <div
+          className="absolute top-1/2 h-2.5 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/90 transition-[left] duration-700"
+          style={{ left: `${50 + tilt * 30}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 /** New hours for a line; the regie part never exceeds them. */
 function withHours(entry: HourEntry, hours: number): HourEntry {
   return entry.regieHours ? { ...entry, hours, regieHours: Math.min(entry.regieHours, hours) } : { ...entry, hours };
@@ -373,6 +410,7 @@ function DayCard({
         </h2>
         <span className="text-xl font-bold">{formatHours(total)} uur</span>
       </div>
+      <DayRuler hours={total} norm={norm} />
 
       {day.entries.length === 0 && <p className="text-base text-gray-600">Geen uren.</p>}
 
@@ -694,6 +732,9 @@ function DocumentStep({ week }: { week: WeekRecord }) {
     return day && day.entries.length > 0 && dayTotal(day) !== settings.normHours && !hasRegie(day, locationById);
   });
   const total = weekTotal(week);
+  // Too few hours tilts the level one way, too many the other.
+  const surplus = wrongDays.reduce((sum, d) => sum + dayTotal(week.days[d]) - settings.normHours, 0);
+  const tilt = total === 0 ? -1 : wrongDays.length === 0 ? 0 : surplus > 0 ? 1 : -1;
 
   // Locations on this week's timesheet whose werknummer is not known yet: that cell stays empty.
   const toolIds = new Set(tools.map((t) => t.id));
@@ -736,7 +777,7 @@ function DocumentStep({ week }: { week: WeekRecord }) {
     setDone('');
     if (!canShareFile(file)) return save();
     try {
-      if (await shareFile(file)) setDone('Gedeeld.');
+      if (await shareFile(file)) setDone('Gedeeld. Klaar is Kees.');
     } catch {
       // Sharing refused by the phone: save the file instead, so he still has it.
       downloadFile(file);
@@ -773,6 +814,7 @@ function DocumentStep({ week }: { week: WeekRecord }) {
         <p className="text-base text-gray-600">
           {week.tools.length} {week.tools.length === 1 ? 'materiaal' : 'materialen'}
         </p>
+        <Waterpas tilt={tilt} />
       </Card>
 
       {total === 0 && <Notice kind="warning">Er zijn nog geen uren ingevuld voor deze week.</Notice>}
