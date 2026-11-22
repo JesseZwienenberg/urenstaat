@@ -1,23 +1,20 @@
 import { useState } from 'react';
-import { Button, Card, Field, Notice, Page } from '../components/ui';
+import { Button, Card, ErrorNotice, Field, Notice, Page, useError } from '../components/ui';
 import { currentPosition, searchAddress, type AddressResult } from '../lib/device';
+import { byWerknummer, locationLabel } from '../lib/location';
 import { useStore } from '../store';
 import { DEFAULT_RADIUS, type WorkLocation } from '../types';
 
 export function Locations() {
   const { locations, places, go, saveLocation, deletePlace } = useStore();
   const [showArchived, setShowArchived] = useState(false);
-  const byNumber = (a: WorkLocation, b: WorkLocation) =>
-    a.werknummer.localeCompare(b.werknummer, 'nl', { numeric: true });
-  const active = locations.filter((l) => !l.archived).sort(byNumber);
-  const archived = locations.filter((l) => l.archived).sort(byNumber);
+  const active = locations.filter((l) => !l.archived).sort(byWerknummer);
+  const archived = locations.filter((l) => l.archived).sort(byWerknummer);
 
   const row = (location: WorkLocation) => (
     <Card key={location.id} className="space-y-3">
       <div>
-        <p className="text-lg font-bold">
-          {location.werknummer} · {location.name}
-        </p>
+        <p className="text-lg font-bold">{locationLabel(location)}</p>
         <p className="text-base text-gray-700">{location.address}</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -95,7 +92,7 @@ export function LocationForm({
   );
   const [results, setResults] = useState<AddressResult[] | null>(null);
   const [busy, setBusy] = useState<'search' | 'gps' | null>(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useError();
 
   async function search() {
     if (address.trim() === '') {
@@ -136,11 +133,11 @@ export function LocationForm({
   }
 
   async function save() {
+    // The werknummer may stay empty until it is known; only a filled-in number has to be unique.
     const number = werknummer.trim();
-    if (number === '') return setError('Vul een werknummer in.');
-    const taken = locations.some(
-      (l) => l.id !== existing?.id && l.werknummer.trim().toLowerCase() === number.toLowerCase(),
-    );
+    const taken =
+      number !== '' &&
+      locations.some((l) => l.id !== existing?.id && l.werknummer.trim().toLowerCase() === number.toLowerCase());
     if (taken) return setError(`Werknummer ${number} bestaat al.`);
     if (!coords) return setError('Zoek het adres op of tik op “Ik ben hier nu”, zodat de app de plek kent.');
     await saveLocation({
@@ -161,9 +158,14 @@ export function LocationForm({
       title={existing ? 'Locatie wijzigen' : 'Nieuwe locatie'}
       footer={<Button onClick={save}>Opslaan</Button>}
     >
-      {error && <Notice kind="error">{error}</Notice>}
+      <ErrorNotice error={error} />
       <Card className="space-y-4">
-        <Field label="Werknummer" value={werknummer} onChange={(e) => setWerknummer(e.target.value)} />
+        <Field
+          label="Werknummer"
+          value={werknummer}
+          onChange={(e) => setWerknummer(e.target.value)}
+          hint="Nog niet bekend? Laat het leeg en vul het later in."
+        />
         <Field label="Naam" value={name} onChange={(e) => setName(e.target.value)} hint="Bijvoorbeeld: Verbouwing fam. Jansen" />
         <Field
           label="Adres"
