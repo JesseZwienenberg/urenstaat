@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, Field, Notice, Page, selectClass } from '../components/ui';
 import { canShareFile, downloadFile, shareFile } from '../lib/device';
 import { dayName, formatDate, formatDayShort, formatHours, formatMinutes } from '../lib/format';
-import { applyProposals, dayTotal, weekTotal, workdaysOf, type UnknownVisit } from '../lib/hours';
+import { applyProposals, dayTotal, HOUR_STEP, weekTotal, workdaysOf, type UnknownVisit } from '../lib/hours';
 import { parseTimelineText, sliceTimeline, TimelineParseError } from '../lib/timeline/parser';
 import { isWeekend, timeOf } from '../lib/tz';
 import { shiftWeek, weekDates, weekId, weekRangeMs } from '../lib/week';
@@ -306,9 +306,9 @@ function DayCard({
             <Button
               variant="secondary"
               className="w-16! text-2xl"
-              aria-label="Uur minder"
-              disabled={entry.hours <= 1}
-              onClick={() => edit(day.entries.map((e, i) => (i === index ? { ...e, hours: e.hours - 1 } : e)))}
+              aria-label="Half uur minder"
+              disabled={entry.hours <= HOUR_STEP}
+              onClick={() => edit(day.entries.map((e, i) => (i === index ? { ...e, hours: e.hours - HOUR_STEP } : e)))}
             >
               −
             </Button>
@@ -316,9 +316,9 @@ function DayCard({
             <Button
               variant="secondary"
               className="w-16! text-2xl"
-              aria-label="Uur meer"
+              aria-label="Half uur meer"
               disabled={entry.hours >= 24}
-              onClick={() => edit(day.entries.map((e, i) => (i === index ? { ...e, hours: e.hours + 1 } : e)))}
+              onClick={() => edit(day.entries.map((e, i) => (i === index ? { ...e, hours: e.hours + HOUR_STEP } : e)))}
             >
               +
             </Button>
@@ -420,17 +420,6 @@ function ToolsStep({ week }: { week: WeekRecord }) {
     if (copies.length > 0) await save([...week.tools, ...copies]);
   }
 
-  const toggleDate = (usage: ToolUsage, date: string) =>
-    save(
-      week.tools.map((u) =>
-        u.id === usage.id
-          ? { ...u, dates: u.dates.includes(date) ? u.dates.filter((d) => d !== date) : [...u.dates, date].sort() }
-          : u,
-      ),
-    );
-
-  const weekdays = weekDates(week).filter((d) => !isWeekend(d) || (week.days[d]?.entries.length ?? 0) > 0);
-
   return (
     <Page
       title="Vul gereedschap in"
@@ -457,25 +446,6 @@ function ToolsStep({ week }: { week: WeekRecord }) {
             >
               ✕
             </button>
-          </div>
-          <div>
-            <p className="mb-2 text-sm text-gray-600">Gebruikt op (hoeft niet):</p>
-            <div className="flex flex-wrap gap-2">
-              {weekdays.map((date) => {
-                const on = usage.dates.includes(date);
-                return (
-                  <button
-                    key={date}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => toggleDate(usage, date)}
-                    className={`min-h-11 rounded-lg border-2 px-3 text-base font-semibold ${on ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-gray-300 bg-white text-gray-800'}`}
-                  >
-                    {formatDayShort(date)}
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </Card>
       ))}
@@ -528,7 +498,6 @@ function ToolsStep({ week }: { week: WeekRecord }) {
 
 function DocumentStep({ week }: { week: WeekRecord }) {
   const { settings, locations, tools, go, home } = useStore();
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState('');
 
@@ -538,29 +507,44 @@ function DocumentStep({ week }: { week: WeekRecord }) {
   });
   const total = weekTotal(week);
 
-  async function makeFile(): Promise<File> {
+  // The PDF is built as soon as this screen opens. Android only opens the share
+  // sheet if navigator.share is called directly from the tap, with no waiting in between.
+  const [file, setFile] = useState<File | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setFile(null);
     // Loaded on demand: the PDF library is the largest part of the app.
-    const { buildPdf, pdfFileName } = await import('../lib/pdf');
-    const doc = buildPdf({ week, settings, locations, tools });
-    return new File([doc.output('blob')], pdfFileName(week), { type: 'application/pdf' });
+    import('../lib/pdf')
+      .then(({ buildPdf, pdfFileName }) => {
+        const doc = buildPdf({ week, settings, locations, tools });
+        const built = new File([doc.output('blob')], pdfFileName(week), { type: 'application/pdf' });
+        if (!cancelled) setFile(built);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Het document maken is mislukt. Probeer het opnieuw.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [week, settings, locations, tools]);
+
+  function save() {
+    if (!file) return;
+    downloadFile(file);
+    setDone(`Opgeslagen als “${file.name}” in Downloads.`);
   }
 
-  async function run(action: 'share' | 'save') {
-    setBusy(true);
+  async function share() {
+    if (!file) return;
     setError('');
     setDone('');
+    if (!canShareFile(file)) return save();
     try {
-      const file = await makeFile();
-      if (action === 'share' && canShareFile(file)) {
-        if (await shareFile(file, file.name.replace('.pdf', ''))) setDone('Gedeeld.');
-      } else {
-        downloadFile(file);
-        setDone(`Opgeslagen als “${file.name}” in Downloads.`);
-      }
+      if (await shareFile(file)) setDone('Gedeeld.');
     } catch {
-      setError('Het document maken is mislukt. Probeer het opnieuw.');
-    } finally {
-      setBusy(false);
+      // Sharing refused by the phone: save the file instead, so he still has it.
+      downloadFile(file);
+      setDone(`Delen lukte niet. De urenstaat is opgeslagen als “${file.name}” in Downloads; deel hem vanuit daar.`);
     }
   }
 
@@ -600,10 +584,10 @@ function DocumentStep({ week }: { week: WeekRecord }) {
       {error && <Notice kind="error">{error}</Notice>}
       {done && <Notice kind="ok">{done}</Notice>}
 
-      <Button className="min-h-20 text-xl" onClick={() => run('share')} disabled={busy}>
-        {busy ? 'Bezig…' : 'Deel urenstaat (PDF)'}
+      <Button className="min-h-20 text-xl" onClick={share} disabled={!file}>
+        {file ? 'Deel urenstaat (PDF)' : 'Bezig…'}
       </Button>
-      <Button variant="secondary" onClick={() => run('save')} disabled={busy}>
+      <Button variant="secondary" onClick={save} disabled={!file}>
         Opslaan op telefoon
       </Button>
     </Page>

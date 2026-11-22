@@ -2,8 +2,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable, { type RowInput } from 'jspdf-autotable';
 import type { Settings, Tool, WeekRecord, WorkLocation } from '../types';
-import { formatDate, formatDayDate, formatDayShort, formatHours } from './format';
-import { dayTotal, weekTotal } from './hours';
+import { formatDate, formatDayDate, formatHours } from './format';
 import { weekDates } from './week';
 
 export interface PdfInput {
@@ -62,39 +61,24 @@ export function buildPdf({ week, settings, locations, tools }: PdfInput): jsPDF 
 
   const hourRows: RowInput[] = [];
   for (const date of dates) {
-    const day = week.days[date];
-    if (!day || day.entries.length === 0) continue;
-    for (const entry of day.entries) {
+    for (const entry of week.days[date]?.entries ?? []) {
       const location = locationById.get(entry.locationId);
       hourRows.push([
         formatDayDate(date),
-        String(week.isoWeek),
         location?.werknummer ?? '',
         location?.address ?? '',
-        { content: formatHours(entry.hours), styles: { halign: 'right' } },
+        formatHours(entry.hours),
       ]);
     }
-    hourRows.push([
-      { content: `Totaal ${formatDayDate(date)}`, colSpan: 4, styles: { fontStyle: 'bold', halign: 'right' } },
-      { content: formatHours(dayTotal(day)), styles: { fontStyle: 'bold', halign: 'right' } },
-    ]);
   }
-  hourRows.push([
-    { content: `Totaal week ${week.isoWeek}`, colSpan: 4, styles: { fontStyle: 'bold', halign: 'right' } },
-    { content: formatHours(weekTotal(week)), styles: { fontStyle: 'bold', halign: 'right' } },
-  ]);
+  if (hourRows.length === 0) hourRows.push([{ content: 'Geen uren ingevuld', colSpan: 4 }]);
 
   autoTable(doc, {
     ...tableStyle,
     startY: y + 3,
-    head: [['Datum', 'Weeknummer', 'Werknummer', 'Adres', 'Uren']],
+    head: [['Datum', 'Werknummer', 'Adres', 'Uren']],
     body: hourRows,
-    columnStyles: {
-      0: { cellWidth: 32 },
-      1: { cellWidth: 30 },
-      2: { cellWidth: 30 },
-      4: { cellWidth: 18, halign: 'right' },
-    },
+    columnStyles: { 0: { cellWidth: 34 }, 1: { cellWidth: 34 }, 3: { cellWidth: 20, halign: 'right' } },
   });
 
   // Table 2: Gebruikt gereedschap
@@ -116,19 +100,18 @@ export function buildPdf({ week, settings, locations, tools }: PdfInput): jsPDF 
         toolById.get(usage.toolId)!.name,
         location?.werknummer ?? '',
         location?.address ?? '',
-        [...usage.dates].sort().map(formatDayShort).join(', '),
       ];
     });
   if (toolRows.length === 0) {
-    toolRows.push([{ content: 'Geen gereedschap ingevuld', colSpan: 4 }]);
+    toolRows.push([{ content: 'Geen gereedschap ingevuld', colSpan: 3 }]);
   }
 
   autoTable(doc, {
     ...tableStyle,
     startY: toolsY + 3,
-    head: [['Gereedschap', 'Werknummer', 'Adres', 'Datum(s)']],
+    head: [['Gereedschap', 'Werknummer', 'Adres']],
     body: toolRows,
-    columnStyles: { 0: { cellWidth: 45 }, 1: { cellWidth: 30 }, 3: { cellWidth: 45 } },
+    columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 34 } },
   });
 
   return doc;

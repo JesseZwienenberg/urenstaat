@@ -4,7 +4,7 @@
  * 1. measureWeek: minutes per day per work location. A stay counts for the
  *    location it matches; travel counts for the location it leads to.
  * 2. proposeHours: split the workday norm (8 h) over the day's locations in
- *    whole hours, in proportion to the measured time.
+ *    half-hour steps, in proportion to the measured time.
  */
 import type { DayRecord, HourEntry, Settings, Travel, Visit, WeekRecord, WorkLocation } from '../types';
 import { matchLocation } from './geo';
@@ -13,6 +13,10 @@ import { weekDates } from './week';
 
 /** A location needs at least this much measured time to get an hour. */
 export const MIN_MINUTES_FOR_HOUR = 20;
+/** Hours are proposed and edited in steps of half an hour. */
+export const HOUR_STEP = 0.5;
+/** What a location gets at the least once it counts. */
+export const MIN_HOURS_PER_LOCATION = 1;
 
 const MINUTE = 60_000;
 
@@ -89,46 +93,52 @@ export function measureWeek(
 }
 
 /**
- * Splits `normHours` over the locations in whole hours.
+ * Splits `normHours` over the locations in steps of half an hour.
  * - One location: it gets all hours.
  * - Several: in proportion to the measured minutes; every location with at
  *   least 20 measured minutes gets at least 1 hour, shorter ones are dropped.
  * - The total is always exactly `normHours`.
  */
 export function proposeHours(minutesByLocation: Record<string, number>, normHours: number): HourEntry[] {
-  const norm = Math.max(0, Math.round(normHours));
+  // Work in whole steps (half hours) so the arithmetic stays exact.
+  const norm = Math.max(0, Math.round(normHours / HOUR_STEP));
+  const minimum = Math.round(MIN_HOURS_PER_LOCATION / HOUR_STEP);
   const candidates = Object.entries(minutesByLocation)
     .filter(([, minutes]) => minutes >= MIN_MINUTES_FOR_HOUR)
     .map(([locationId, minutes]) => ({ locationId, minutes }))
     // Longest first; ties in a fixed order so the result never flips between runs.
     .sort((a, b) => b.minutes - a.minutes || a.locationId.localeCompare(b.locationId))
-    .slice(0, norm); // cannot give more locations an hour than there are hours
+    .slice(0, Math.floor(norm / minimum)); // no more locations than the day has room for
 
-  if (candidates.length === 0 || norm === 0) return [];
+  if (candidates.length === 0) return [];
 
   const total = candidates.reduce((sum, c) => sum + c.minutes, 0);
   const rows = candidates.map((c) => {
     const ideal = (c.minutes / total) * norm;
-    return { ...c, ideal, hours: Math.max(1, Math.floor(ideal)) };
+    return { ...c, ideal, steps: Math.max(minimum, Math.floor(ideal)) };
   });
 
-  let assigned = rows.reduce((sum, r) => sum + r.hours, 0);
+  let assigned = rows.reduce((sum, r) => sum + r.steps, 0);
   while (assigned < norm) {
-    // Give an hour to whoever is furthest below their fair share.
-    const row = rows.reduce((best, r) => (r.ideal - r.hours > best.ideal - best.hours ? r : best));
-    row.hours += 1;
+    // Give a step to whoever is furthest below their fair share.
+    const row = rows.reduce((best, r) => (r.ideal - r.steps > best.ideal - best.steps ? r : best));
+    row.steps += 1;
     assigned += 1;
   }
   while (assigned > norm) {
-    // Take an hour from whoever is furthest above their fair share (never below 1).
+    // Take a step from whoever is furthest above their fair share (never below the minimum).
     const row = rows
-      .filter((r) => r.hours > 1)
-      .reduce((best, r) => (r.hours - r.ideal > best.hours - best.ideal ? r : best));
-    row.hours -= 1;
+      .filter((r) => r.steps > minimum)
+      .reduce((best, r) => (r.steps - r.ideal > best.steps - best.ideal ? r : best));
+    row.steps -= 1;
     assigned -= 1;
   }
 
-  return rows.map((r) => ({ locationId: r.locationId, hours: r.hours, measuredMinutes: r.minutes }));
+  return rows.map((r) => ({
+    locationId: r.locationId,
+    hours: r.steps * HOUR_STEP,
+    measuredMinutes: r.minutes,
+  }));
 }
 
 export function dayTotal(day: DayRecord | undefined): number {

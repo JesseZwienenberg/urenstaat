@@ -8,7 +8,7 @@ Everything is stored on the phone (IndexedDB). There is no server and no account
 
 1. **Kies week** – defaults to the previous ISO week.
 2. **Importeer Tijdlijn** – pick the exported JSON file, or share it into the app from Android. Only the selected week is used; importing the same file again changes nothing.
-3. **Controleer uren** – each workday gets a proposal of 8 whole hours, split over the locations visited.
+3. **Controleer uren** – each workday gets a proposal of 8 in half-hour steps, split over the locations visited.
 4. **Vul gereedschap in** – tools per job number, with "Kopieer van vorige week".
 5. **Maak document** – `Urenstaat week [nr] [jaar].pdf`, shared through the Android share sheet or saved.
 
@@ -17,7 +17,7 @@ Everything is stored on the phone (IndexedDB). There is no server and no account
 - Time at a work location counts for that location, and so does the travel **towards** it (everything driven since the previous stay, same day). Travel home does not count.
 - A visit is matched to the nearest active location within its radius (default 150 m). Other places are ignored; they are listed under "Onbekende plekken" in case one should become a work location.
 - Stays shorter than 15 minutes are ignored (setting).
-- A workday is 8 hours (setting), always in whole hours. With several locations the hours are split in proportion to the measured time. A location with at least 20 measured minutes gets at least 1 hour; shorter ones are dropped.
+- A workday is 8 hours (setting), in steps of half an hour. With several locations the hours are split in proportion to the measured time. A location with at least 20 measured minutes gets at least 1 hour; shorter ones are dropped.
 - Saturday and Sunday are never filled in automatically. They can be added by hand.
 - Days edited by hand are kept when a file is imported again.
 - All day boundaries use Europe/Amsterdam time, including daylight saving time.

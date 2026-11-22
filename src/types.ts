@@ -3,7 +3,7 @@
 export interface Settings {
   name: string;
   company: string;
-  /** Hours in a normal workday (whole number). */
+  /** Hours in a normal workday (steps of half an hour). */
   normHours: number;
   /** Stays shorter than this are ignored. */
   minStayMinutes: number;
@@ -52,7 +52,7 @@ export interface Travel {
 
 export interface HourEntry {
   locationId: string;
-  /** Whole hours written on the timesheet. */
+  /** Hours written on the timesheet, in steps of half an hour. */
   hours: number;
   /** Time at the location plus travel towards it, from the Timeline. 0 for manual entries. */
   measuredMinutes: number;

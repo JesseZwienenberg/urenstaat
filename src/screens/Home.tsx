@@ -111,7 +111,7 @@ export function SettingsScreen() {
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   async function save() {
-    const normHours = Math.min(24, Math.max(1, Math.round(Number(form.normHours) || 8)));
+    const normHours = Math.min(24, Math.max(1, Math.round((Number(form.normHours) || 8) * 2) / 2));
     const minStayMinutes = Math.min(240, Math.max(0, Math.round(Number(form.minStayMinutes) || 0)));
     const next = { ...form, name: form.name.trim(), company: form.company.trim(), normHours, minStayMinutes };
     setForm(next);
@@ -129,7 +129,7 @@ export function SettingsScreen() {
     const file = new File([JSON.stringify(data)], `urenstaat-backup-${todayKey()}.json`, {
       type: 'application/json',
     });
-    if (canShareFile(file)) await shareFile(file, 'Back-up Urenstaat');
+    if (canShareFile(file)) await shareFile(file);
     else downloadFile(file);
   }
 
@@ -159,10 +159,10 @@ export function SettingsScreen() {
         <Field
           label="Uren per werkdag"
           type="number"
-          inputMode="numeric"
+          inputMode="decimal"
           min={1}
           max={24}
-          step={1}
+          step={0.5}
           value={form.normHours}
           onChange={(e) => setForm({ ...form, normHours: e.target.valueAsNumber })}
         />

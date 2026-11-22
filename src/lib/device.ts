@@ -50,9 +50,10 @@ export function canShareFile(file: File): boolean {
 }
 
 /** Opens the Android share sheet. Resolves false if the user closed it. */
-export async function shareFile(file: File, title: string): Promise<boolean> {
+export async function shareFile(file: File): Promise<boolean> {
   try {
-    await navigator.share({ files: [file], title });
+    // Files only: some Android apps reject a share that also carries a title or text.
+    await navigator.share({ files: [file] });
     return true;
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') return false;

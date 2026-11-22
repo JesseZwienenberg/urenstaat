@@ -74,13 +74,16 @@ describe('proposeHours', () => {
   it('gives one location the whole day', () => {
     expect(hours({ A: 300 })).toEqual({ A: 8 });
   });
-  it('splits in proportion, in whole hours, adding up to the norm', () => {
+  it('splits in proportion, in half hours, adding up to the norm', () => {
     expect(hours({ A: 240, B: 240 })).toEqual({ A: 4, B: 4 });
     expect(hours({ A: 300, B: 100 })).toEqual({ A: 6, B: 2 });
-    expect(hours({ A: 200, B: 150, C: 130 })).toEqual({ A: 3, B: 3, C: 2 });
+    expect(hours({ A: 200, B: 150, C: 130 })).toEqual({ A: 3.5, B: 2.5, C: 2 });
+    expect(hours({ A: 300, B: 180 })).toEqual({ A: 5, B: 3 });
+    expect(hours({ A: 330, B: 150 })).toEqual({ A: 5.5, B: 2.5 });
   });
   it('gives a short visit of at least 20 minutes one hour', () => {
     expect(hours({ A: 460, B: 20 })).toEqual({ A: 7, B: 1 });
+    expect(hours({ A: 420, B: 60 })).toEqual({ A: 7, B: 1 });
   });
   it('drops visits under 20 minutes', () => {
     expect(hours({ A: 460, B: 19 })).toEqual({ A: 8 });
@@ -94,10 +97,10 @@ describe('proposeHours', () => {
       const count = (seed % 6) + 1;
       const minutes: Record<string, number> = {};
       for (let i = 0; i < count; i++) minutes[`L${i}`] = 20 + ((seed * (i + 7) * 37) % 400);
-      for (const norm of [4, 8, 9]) {
+      for (const norm of [4, 7.5, 8, 9]) {
         const entries = proposeHours(minutes, norm);
         expect(entries.reduce((s, e) => s + e.hours, 0)).toBe(norm);
-        expect(entries.every((e) => Number.isInteger(e.hours) && e.hours >= 1)).toBe(true);
+        expect(entries.every((e) => Number.isInteger(e.hours * 2) && e.hours >= 1)).toBe(true);
       }
     }
   });
@@ -130,7 +133,7 @@ describe('sample week 47 of 2026', () => {
     expect(unknown.every((u) => workdays.includes(u.date))).toBe(true);
   });
 
-  it('proposes whole 8-hour days and leaves the weekend out', () => {
+  it('proposes 8-hour days and leaves the weekend out', () => {
     const week = { ...emptyWeek(2026, 47, '2026-W47'), ...sliced, importedAt: 1 };
     const result = applyProposals(week, [jobA, jobB], DEFAULT_SETTINGS).week;
     const summary = Object.fromEntries(
