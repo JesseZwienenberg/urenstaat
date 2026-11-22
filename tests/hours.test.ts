@@ -5,7 +5,7 @@ import { applyProposals, emptyWeek, measureWeek, proposeHours } from '../src/lib
 import { parseTimelineText, sliceTimeline } from '../src/lib/timeline/parser';
 import { addDays, dateKeyOf, startOfDayMs } from '../src/lib/tz';
 import { isoWeekOf, previousWeekOf, weekDates, weekId, weekRangeMs } from '../src/lib/week';
-import { DEFAULT_SETTINGS, type WorkLocation } from '../src/types';
+import { DEFAULT_SETTINGS, type MarkedPlace, type WorkLocation } from '../src/types';
 
 const location = (id: string, lat: number, lng: number, extra: Partial<WorkLocation> = {}): WorkLocation => ({
   id,
@@ -118,9 +118,13 @@ describe('sample week 47 of 2026', () => {
   const { startMs, endMs } = weekRangeMs(isoWeek);
   const sliced = sliceTimeline(parseTimelineText(text), startMs - 86_400_000, endMs);
   const workdays = weekDates(isoWeek).slice(0, 5);
+  const options = { minStayMinutes: 15, workStartHour: 6, workEndHour: 17 };
+  const bouwmarkt = (kind: MarkedPlace['kind']): MarkedPlace => ({
+    id: 'bm', name: 'Bouwmarkt', lat: 52.1012, lng: 5.0627, radius: 100, kind,
+  });
 
   it('measures stay plus travel towards each location', () => {
-    const { days, unknown } = measureWeek(sliced.visits, sliced.travels, [jobA, jobB], workdays, 15);
+    const { days, unknown } = measureWeek(sliced.visits, sliced.travels, [jobA, jobB], workdays, options);
     expect(days['2026-11-16']).toEqual({ A: 510 + 35 }); // 07:40–16:10 + 35 min drive there
     expect(days['2026-11-17']).toEqual({ A: 228 + 32, B: 230 + 40 });
     // Wednesday: only the drive after the builders' merchant counts for job B.
@@ -128,7 +132,7 @@ describe('sample week 47 of 2026', () => {
     // Thursday: the 10-minute petrol stop is ignored, both drives count.
     expect(days['2026-11-19']).toEqual({ A: 475 + 35 });
     expect(days['2026-11-20']).toEqual({ A: 260 + 35, B: 15 + 25 });
-    // Unknown stays on workdays: home each day plus the builders' merchant.
+    // Unknown stays during working hours: the builders' merchant, and home after work.
     expect(unknown.filter((u) => u.date === '2026-11-18')).toHaveLength(2);
     expect(unknown.every((u) => workdays.includes(u.date))).toBe(true);
   });
@@ -175,12 +179,42 @@ describe('sample week 47 of 2026', () => {
     expect(second.days['2026-11-17'].manual).toBe(false);
   });
 
-  it('splits a stay that crosses midnight over both days', () => {
-    const nightShift = [
-      { startMs: Date.parse('2026-11-16T21:00:00+01:00'), endMs: Date.parse('2026-11-17T02:00:00+01:00'), lat: jobA.lat, lng: jobA.lng },
+  it('counts a work-related stop, and the drive to it, for the next job', () => {
+    const { days, unknown } = measureWeek(sliced.visits, sliced.travels, [jobA, jobB], workdays, {
+      ...options,
+      places: [bouwmarkt('work')],
+    });
+    // 20 min drive + 30 min at the builders' merchant + 30 min drive + 490 min on the job.
+    expect(days['2026-11-18']).toEqual({ B: 20 + 30 + 30 + 490 });
+    expect(unknown.filter((u) => u.date === '2026-11-18')).toHaveLength(1); // only home is left
+  });
+
+  it('hides a private place and does not count it', () => {
+    const { days, unknown } = measureWeek(sliced.visits, sliced.travels, [jobA, jobB], workdays, {
+      ...options,
+      places: [bouwmarkt('private')],
+    });
+    expect(days['2026-11-18']).toEqual({ B: 490 + 30 });
+    expect(unknown.filter((u) => u.date === '2026-11-18')).toHaveLength(1);
+  });
+
+  it('only counts time between 06:00 and 17:00', () => {
+    const at = (time: string) => Date.parse(`2026-11-16T${time}:00+01:00`);
+    const longDay = [{ startMs: at('05:00'), endMs: at('19:30'), lat: jobA.lat, lng: jobA.lng }];
+    const earlyDrive = [{ startMs: at('04:30'), endMs: at('05:00') }];
+    const { days } = measureWeek(longDay, earlyDrive, [jobA], workdays, options);
+    expect(days['2026-11-16']).toEqual({ A: 11 * 60 });
+    // An evening at an unknown place is not listed.
+    const evening = [{ startMs: at('18:00'), endMs: at('21:00'), lat: 51.5, lng: 5.5 }];
+    expect(measureWeek(evening, [], [jobA], workdays, options).unknown).toHaveLength(0);
+  });
+
+  it('counts the part of a night-time stay that falls in working hours', () => {
+    const stay = [
+      { startMs: Date.parse('2026-11-16T15:00:00+01:00'), endMs: Date.parse('2026-11-17T08:00:00+01:00'), lat: jobA.lat, lng: jobA.lng },
     ];
-    const { days } = measureWeek(nightShift, [], [jobA], workdays, 15);
-    expect(days['2026-11-16']).toEqual({ A: 180 });
+    const { days } = measureWeek(stay, [], [jobA], workdays, options);
+    expect(days['2026-11-16']).toEqual({ A: 120 });
     expect(days['2026-11-17']).toEqual({ A: 120 });
   });
 });

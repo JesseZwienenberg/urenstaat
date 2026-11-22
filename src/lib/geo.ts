@@ -13,21 +13,29 @@ export function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: 
   return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
-/** The nearest active location whose radius contains the point, or null. */
-export function matchLocation(
+/** The nearest item whose radius contains the point, or null. */
+export function nearestWithin<T extends { lat: number; lng: number; radius: number }>(
   lat: number,
   lng: number,
-  locations: WorkLocation[],
-): WorkLocation | null {
-  let best: WorkLocation | null = null;
+  items: T[],
+): T | null {
+  let best: T | null = null;
   let bestDistance = Infinity;
-  for (const location of locations) {
-    if (location.archived) continue;
-    const distance = haversineMeters(lat, lng, location.lat, location.lng);
-    if (distance <= location.radius && distance < bestDistance) {
-      best = location;
+  for (const item of items) {
+    const distance = haversineMeters(lat, lng, item.lat, item.lng);
+    if (distance <= item.radius && distance < bestDistance) {
+      best = item;
       bestDistance = distance;
     }
   }
   return best;
+}
+
+/** The nearest active location whose radius contains the point, or null. */
+export function matchLocation(lat: number, lng: number, locations: WorkLocation[]): WorkLocation | null {
+  return nearestWithin(
+    lat,
+    lng,
+    locations.filter((l) => !l.archived),
+  );
 }

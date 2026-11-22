@@ -59,13 +59,18 @@ function offsetMs(ms: number): number {
   return asUtc - Math.floor(ms / 1000) * 1000;
 }
 
+/** The instant at which the Amsterdam clock shows the given hour on the given day. */
+export function atLocalHourMs(dateKey: string, hour: number): number {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const asUtc = Date.UTC(y, m - 1, d) + hour * 3_600_000;
+  // Two passes, so days around a DST change resolve to the right offset.
+  const firstGuess = asUtc - offsetMs(asUtc);
+  return asUtc - offsetMs(firstGuess);
+}
+
 /** The instant at which the given Amsterdam day starts (00:00 local time). */
 export function startOfDayMs(dateKey: string): number {
-  const [y, m, d] = dateKey.split('-').map(Number);
-  const utcMidnight = Date.UTC(y, m - 1, d);
-  // Two passes, so days around a DST change resolve to the right offset.
-  const firstGuess = utcMidnight - offsetMs(utcMidnight);
-  return utcMidnight - offsetMs(firstGuess);
+  return atLocalHourMs(dateKey, 0);
 }
 
 /** Calendar arithmetic on a day key. */

@@ -8,7 +8,7 @@ import { parseTimelineText, sliceTimeline, TimelineParseError } from '../lib/tim
 import { isWeekend, timeOf } from '../lib/tz';
 import { shiftWeek, weekDates, weekId, weekRangeMs } from '../lib/week';
 import { useStore } from '../store';
-import type { DayRecord, ToolUsage, WeekRecord, WorkLocation } from '../types';
+import { PLACE_RADIUS, type DayRecord, type MarkedPlace, type ToolUsage, type WeekRecord, type WorkLocation } from '../types';
 
 const DAY_MS = 86_400_000;
 
@@ -41,7 +41,7 @@ export function WeekFlow({ weekId: id, step }: { weekId: string; step: 2 | 3 | 4
 /* ---------------------------------------------------------------- Step 2 */
 
 function ImportStep({ week }: { week: WeekRecord }) {
-  const { locations, settings, saveWeek, go, sharedFile, setSharedFile } = useStore();
+  const { locations, places, settings, saveWeek, go, sharedFile, setSharedFile } = useStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [summary, setSummary] = useState<{ stays: number; matchedDays: number } | null>(null);
@@ -62,7 +62,12 @@ function ImportStep({ week }: { week: WeekRecord }) {
         );
         return;
       }
-      const result = applyProposals({ ...week, visits, travels, importedAt: Date.now() }, locations, settings);
+      const result = applyProposals(
+        { ...week, visits, travels, importedAt: Date.now() },
+        locations,
+        settings,
+        places,
+      );
       await saveWeek(result.week);
       const matchedDays = workdaysOf(result.week).filter((d) => (result.week.days[d]?.entries.length ?? 0) > 0);
       setSummary({ stays: inWeek.length, matchedDays: matchedDays.length });
@@ -148,7 +153,7 @@ function ImportStep({ week }: { week: WeekRecord }) {
 /* ---------------------------------------------------------------- Step 3 */
 
 function HoursStep({ week }: { week: WeekRecord }) {
-  const { locations, settings, saveWeek, go } = useStore();
+  const { locations, places, settings, saveWeek, savePlace, go } = useStore();
   const [unknown, setUnknown] = useState<UnknownVisit[]>([]);
   const locationById = useMemo(() => new Map(locations.map((l) => [l.id, l])), [locations]);
   const active = useMemo(
@@ -161,11 +166,11 @@ function HoursStep({ week }: { week: WeekRecord }) {
 
   // Refresh the proposals whenever locations or settings changed (e.g. a new location was just added).
   useEffect(() => {
-    const result = applyProposals(week, locations, settings);
+    const result = applyProposals(week, locations, settings, places);
     setUnknown(result.unknown);
     if (JSON.stringify(result.week.days) !== JSON.stringify(week.days)) void saveWeek(result.week);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locations, settings, week.importedAt]);
+  }, [locations, places, settings, week.importedAt]);
 
   const dates = weekDates(week);
   const shown = dates.filter((d) => !isWeekend(d) || (week.days[d]?.entries.length ?? 0) > 0 || week.days[d]?.manual);
@@ -175,7 +180,7 @@ function HoursStep({ week }: { week: WeekRecord }) {
 
   function resetDay(date: string) {
     const { [date]: _old, ...rest } = week.days;
-    void saveWeek(applyProposals({ ...week, days: rest }, locations, settings).week);
+    void saveWeek(applyProposals({ ...week, days: rest }, locations, settings, places).week);
   }
 
   return (
@@ -224,29 +229,76 @@ function HoursStep({ week }: { week: WeekRecord }) {
             Onbekende plekken ({unknown.length})
           </summary>
           <p className="mt-2 text-base text-gray-700">
-            Hier was je wel, maar het is geen werklocatie. Deze tijd telt niet mee. Was het toch werk? Maak er dan
-            een werklocatie van.
+            Hier was je tijdens werktijd, maar het is geen werklocatie. Deze tijd telt niet mee. Kom je er vaker?
+            Geef dan aan wat voor plek het is, dan vraagt de app er niet meer naar.
           </p>
           <ul className="mt-3 space-y-3">
             {unknown.map((visit) => (
-              <li key={`${visit.startMs}-${visit.lat}`} className="rounded-xl border-2 border-gray-200 p-3">
-                <p className="text-base font-semibold">
-                  {formatDayShort(visit.date)} · {timeOf(visit.startMs)}–{timeOf(visit.endMs)} (
-                  {formatMinutes((visit.endMs - visit.startMs) / 60_000)})
-                </p>
-                <Button
-                  variant="secondary"
-                  className="mt-2 text-base"
-                  onClick={() => go({ name: 'location', preset: { lat: visit.lat, lng: visit.lng } })}
-                >
-                  Maak werklocatie
-                </Button>
-              </li>
+              <UnknownItem
+                key={`${visit.startMs}-${visit.lat}`}
+                visit={visit}
+                onLocation={() => go({ name: 'location', preset: { lat: visit.lat, lng: visit.lng } })}
+                onMark={(place) => void savePlace(place)}
+              />
             ))}
           </ul>
         </details>
       )}
     </Page>
+  );
+}
+
+function UnknownItem({
+  visit,
+  onLocation,
+  onMark,
+}: {
+  visit: UnknownVisit;
+  onLocation(): void;
+  onMark(place: MarkedPlace): void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const mark = (kind: MarkedPlace['kind']) =>
+    onMark({
+      id: crypto.randomUUID(),
+      name: name.trim() || (kind === 'work' ? 'Werkplek zonder werknummer' : 'Privéplek'),
+      lat: visit.lat,
+      lng: visit.lng,
+      radius: PLACE_RADIUS,
+      kind,
+    });
+
+  return (
+    <li className="space-y-2 rounded-xl border-2 border-gray-200 p-3">
+      <p className="text-base font-semibold">
+        {formatDayShort(visit.date)} · {timeOf(visit.startMs)}–{timeOf(visit.endMs)} (
+        {formatMinutes((visit.endMs - visit.startMs) / 60_000)})
+      </p>
+      {!open ? (
+        <Button variant="secondary" className="text-base" onClick={() => setOpen(true)}>
+          Wat is dit voor plek?
+        </Button>
+      ) : (
+        <>
+          <Button variant="secondary" className="text-base" onClick={onLocation}>
+            Een klus: maak werklocatie
+          </Button>
+          <Field
+            label="Naam van de plek (hoeft niet)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            hint="Bijvoorbeeld: Thuis, Bouwmarkt, Werkplaats"
+          />
+          <Button variant="secondary" className="text-base" onClick={() => mark('work')}>
+            Werk, geen klus: telt mee bij de volgende klus
+          </Button>
+          <Button variant="secondary" className="text-base" onClick={() => mark('private')}>
+            Privé: telt nooit mee
+          </Button>
+        </>
+      )}
+    </li>
   );
 }
 

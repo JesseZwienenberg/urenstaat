@@ -1,14 +1,24 @@
 /**
  * From Timeline data to proposed hours.
  *
- * 1. measureWeek: minutes per day per work location. A stay counts for the
- *    location it matches; travel counts for the location it leads to.
+ * 1. measureWeek: minutes per day per work location, within working hours.
+ *    A stay counts for the location it matches; travel and work-related
+ *    stops count for the location they lead to.
  * 2. proposeHours: split the workday norm (8 h) over the day's locations in
  *    half-hour steps, in proportion to the measured time.
  */
-import type { DayRecord, HourEntry, Settings, Travel, Visit, WeekRecord, WorkLocation } from '../types';
-import { matchLocation } from './geo';
-import { addDays, dateKeyOf, isWeekend, startOfDayMs } from './tz';
+import type {
+  DayRecord,
+  HourEntry,
+  MarkedPlace,
+  Settings,
+  Travel,
+  Visit,
+  WeekRecord,
+  WorkLocation,
+} from '../types';
+import { matchLocation, nearestWithin } from './geo';
+import { atLocalHourMs, dateKeyOf, isWeekend } from './tz';
 import { weekDates } from './week';
 
 /** A location needs at least this much measured time to get an hour. */
@@ -27,12 +37,20 @@ export interface UnknownVisit extends Visit {
 export interface WeekMeasure {
   /** date → locationId → minutes */
   days: Record<string, Record<string, number>>;
-  /** Stays on the given days that match no active location. */
+  /** Stays during working hours that match no active location and no marked place. */
   unknown: UnknownVisit[];
 }
 
 const overlapMs = (aStart: number, aEnd: number, bStart: number, bEnd: number) =>
   Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
+
+export interface MeasureOptions {
+  minStayMinutes: number;
+  /** Only time between these hours (Amsterdam clock) counts. */
+  workStartHour: number;
+  workEndHour: number;
+  places?: MarkedPlace[];
+}
 
 /**
  * @param dates the days to measure (day keys); anything outside them is ignored
@@ -42,46 +60,65 @@ export function measureWeek(
   travels: Travel[],
   locations: WorkLocation[],
   dates: string[],
-  minStayMinutes: number,
+  options: MeasureOptions,
 ): WeekMeasure {
-  const dateSet = new Set(dates);
+  const places = options.places ?? [];
   const ms: Record<string, Record<string, number>> = {};
-  for (const date of dates) ms[date] = {};
+  const windows = new Map<string, { start: number; end: number }>();
+  for (const date of dates) {
+    ms[date] = {};
+    windows.set(date, {
+      start: atLocalHourMs(date, options.workStartHour),
+      end: atLocalHourMs(date, options.workEndHour),
+    });
+  }
   const unknown: UnknownVisit[] = [];
+  const add = (date: string, locationId: string, value: number) => {
+    if (value > 0) ms[date][locationId] = (ms[date][locationId] ?? 0) + value;
+  };
 
   // Short stops (traffic light, petrol station) are dropped before anything else,
   // so travel through them still counts towards the next real stay.
   const stays = visits
-    .filter((v) => v.endMs - v.startMs >= minStayMinutes * MINUTE)
-    .sort((a, b) => a.startMs - b.startMs);
+    .filter((v) => v.endMs - v.startMs >= options.minStayMinutes * MINUTE)
+    .sort((a, b) => a.startMs - b.startMs)
+    .map((stay) => {
+      const location = matchLocation(stay.lat, stay.lng, locations);
+      return { ...stay, location, place: location ? null : nearestWithin(stay.lat, stay.lng, places) };
+    });
 
   stays.forEach((stay, index) => {
-    const location = matchLocation(stay.lat, stay.lng, locations);
     const startDate = dateKeyOf(stay.startMs);
 
-    if (!location) {
-      if (dateSet.has(startDate)) unknown.push({ ...stay, date: startDate });
+    if (!stay.location) {
+      // Unmarked places are listed for review, but only if he was there during working hours.
+      const window = windows.get(startDate);
+      if (!stay.place && window && overlapMs(stay.startMs, stay.endMs, window.start, window.end) > 0) {
+        unknown.push({ startMs: stay.startMs, endMs: stay.endMs, lat: stay.lat, lng: stay.lng, date: startDate });
+      }
       return;
     }
 
-    // Time at the location, split per day if the stay crosses midnight.
-    for (const date of dates) {
-      const dayStart = startOfDayMs(date);
-      const dayEnd = startOfDayMs(addDays(date, 1));
-      const part = overlapMs(stay.startMs, stay.endMs, dayStart, dayEnd);
-      if (part > 0) ms[date][location.id] = (ms[date][location.id] ?? 0) + part;
+    // Time at the location, per day, within working hours.
+    for (const [date, window] of windows) {
+      add(date, stay.location.id, overlapMs(stay.startMs, stay.endMs, window.start, window.end));
     }
 
-    // Travel towards the location: everything driven since the previous stay, same day only.
-    if (dateSet.has(startDate)) {
-      const previousEnd = index > 0 ? stays[index - 1].endMs : -Infinity;
-      const windowStart = Math.max(previousEnd, startOfDayMs(startDate));
-      let travelMs = 0;
-      for (const travel of travels) {
-        travelMs += overlapMs(travel.startMs, travel.endMs, windowStart, stay.startMs);
-      }
-      if (travelMs > 0) ms[startDate][location.id] = (ms[startDate][location.id] ?? 0) + travelMs;
+    // The way there: travel since the previous stay, plus any work-related stops
+    // (builders' merchant, workshop) made on the way. Same day, within working hours.
+    const window = windows.get(startDate);
+    if (!window) return;
+    let first = index;
+    while (first > 0 && stays[first - 1].place?.kind === 'work' && stays[first - 1].startMs >= window.start) {
+      first -= 1;
     }
+    const previousEnd = first > 0 ? stays[first - 1].endMs : -Infinity;
+    const from = Math.max(previousEnd, window.start);
+    const to = Math.min(stay.startMs, window.end);
+    let onTheWay = 0;
+    for (const travel of travels) onTheWay += overlapMs(travel.startMs, travel.endMs, from, to);
+    for (let i = first; i < index; i++) onTheWay += overlapMs(stays[i].startMs, stays[i].endMs, from, to);
+    add(startDate, stay.location.id, onTheWay);
   });
 
   const days: Record<string, Record<string, number>> = {};
@@ -162,9 +199,10 @@ export function applyProposals(
   week: WeekRecord,
   locations: WorkLocation[],
   settings: Settings,
+  places: MarkedPlace[] = [],
 ): { week: WeekRecord; unknown: UnknownVisit[] } {
   const workdays = workdaysOf(week);
-  const measure = measureWeek(week.visits, week.travels, locations, workdays, settings.minStayMinutes);
+  const measure = measureWeek(week.visits, week.travels, locations, workdays, { ...settings, places });
   const days: Record<string, DayRecord> = { ...week.days };
 
   for (const date of workdays) {

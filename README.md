@@ -15,7 +15,9 @@ Everything is stored on the phone (IndexedDB). There is no server and no account
 ### Hour rules
 
 - Time at a work location counts for that location, and so does the travel **towards** it (everything driven since the previous stay, same day). Travel home does not count.
-- A visit is matched to the nearest active location within its radius (default 150 m). Other places are ignored; they are listed under "Onbekende plekken" in case one should become a work location.
+- Only time between 06:00 and 17:00 counts (setting).
+- A visit is matched to the nearest active location within its radius (default 150 m). Other places are ignored; those visited during working hours are listed under "Onbekende plekken".
+- A place from that list can be marked as **private** (home: never counts, no longer listed) or as **work without a job number** (builders' merchant, workshop: the time there and the drive to it count for the next job that day).
 - Stays shorter than 15 minutes are ignored (setting).
 - A workday is 8 hours (setting), in steps of half an hour. With several locations the hours are split in proportion to the measured time. A location with at least 20 measured minutes gets at least 1 hour; shorter ones are dropped.
 - Saturday and Sunday are never filled in automatically. They can be added by hand.

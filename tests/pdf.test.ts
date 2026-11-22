@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { formatDayDate, formatHours, formatMinutes } from '../src/lib/format';
 import { emptyWeek } from '../src/lib/hours';
 import { buildPdf, pdfFileName } from '../src/lib/pdf';
-import type { WeekRecord, WorkLocation } from '../src/types';
+import { DEFAULT_SETTINGS, type WeekRecord, type WorkLocation } from '../src/types';
 
 const locations: WorkLocation[] = [
   { id: 'A', werknummer: '2026-014', name: 'Verbouwing', address: 'Dorpsstraat 12, 3811 AB Amersfoort', lat: 0, lng: 0, radius: 150, archived: false },
@@ -48,7 +48,7 @@ describe('PDF', () => {
   it('builds a one-page A4 document', () => {
     const doc = buildPdf({
       week,
-      settings: { name: 'Jan de Vries', company: 'De Vries Timmerwerken', normHours: 8, minStayMinutes: 15 },
+      settings: { ...DEFAULT_SETTINGS, name: 'Jan de Vries', company: 'De Vries Timmerwerken' },
       locations,
       tools: [
         { id: 't1', name: 'Afkortzaag', description: '' },

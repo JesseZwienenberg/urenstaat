@@ -113,7 +113,19 @@ export function SettingsScreen() {
   async function save() {
     const normHours = Math.min(24, Math.max(1, Math.round((Number(form.normHours) || 8) * 2) / 2));
     const minStayMinutes = Math.min(240, Math.max(0, Math.round(Number(form.minStayMinutes) || 0)));
-    const next = { ...form, name: form.name.trim(), company: form.company.trim(), normHours, minStayMinutes };
+    const hour = (value: number, fallback: number) =>
+      Number.isFinite(value) ? Math.min(24, Math.max(0, Math.round(value))) : fallback;
+    const workStartHour = hour(form.workStartHour, 6);
+    const workEndHour = Math.max(workStartHour + 1, hour(form.workEndHour, 17));
+    const next = {
+      ...form,
+      name: form.name.trim(),
+      company: form.company.trim(),
+      normHours,
+      minStayMinutes,
+      workStartHour,
+      workEndHour,
+    };
     setForm(next);
     await store.saveSettings(next);
     setMessage({ kind: 'ok', text: 'Instellingen opgeslagen.' });
@@ -123,6 +135,7 @@ export function SettingsScreen() {
     const data = makeBackup({
       settings: store.settings,
       locations: store.locations,
+      places: store.places,
       tools: store.tools,
       weeks: Object.values(store.weeks),
     });
@@ -175,6 +188,29 @@ export function SettingsScreen() {
           value={form.minStayMinutes}
           onChange={(e) => setForm({ ...form, minStayMinutes: e.target.valueAsNumber })}
         />
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label="Werktijd van (uur)"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={23}
+            step={1}
+            value={form.workStartHour}
+            onChange={(e) => setForm({ ...form, workStartHour: e.target.valueAsNumber })}
+          />
+          <Field
+            label="tot (uur)"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={24}
+            step={1}
+            value={form.workEndHour}
+            onChange={(e) => setForm({ ...form, workEndHour: e.target.valueAsNumber })}
+          />
+        </div>
+        <p className="text-sm text-gray-600">Tijd buiten deze uren telt niet mee als werk.</p>
         <Button onClick={save}>Opslaan</Button>
       </Card>
 
@@ -206,12 +242,13 @@ export function SettingsScreen() {
 /** How to get the Timeline file out of Android. */
 export function Help() {
   const steps = [
-    <>Open <b>Instellingen</b> op je telefoon (het tandwieltje).</>,
-    <>Tik op <b>Locatie</b>.</>,
+    <>Open <b>Google Maps</b> en tik rechtsboven op je <b>profiel</b> (het rondje).</>,
+    <>Scroll naar beneden en tik op <b>Instellingen</b>.</>,
+    <>Tik op <b>Locatie en privacy</b>.</>,
+    <>Tik helemaal bovenaan op <b>Apparaatlocatie</b>.</>,
     <>Tik op <b>Locatieservices</b>.</>,
     <>Tik op <b>Tijdlijn</b>.</>,
-    <>Tik op <b>Tijdlijngegevens exporteren</b> en daarna op <b>Doorgaan</b>.</>,
-    <>Kies de map <b>Downloads</b> en tik op <b>Opslaan</b>. Het bestand heet <b>Tijdlijn.json</b>.</>,
+    <>Tik op <b>Tijdlijn-gegevens exporteren</b> en sla het bestand op in <b>Downloads</b>.</>,
     <>Ga terug naar deze app en tik op <b>Kies Tijdlijn-bestand</b>. Kies het bestand uit Downloads.</>,
   ];
   return (
@@ -226,10 +263,6 @@ export function Help() {
           </li>
         ))}
       </ol>
-      <Notice kind="info">
-        <b>Kun je het niet vinden?</b> Tik in Instellingen bovenaan op het vergrootglas en zoek op “Tijdlijn”. De
-        namen kunnen per telefoon iets verschillen.
-      </Notice>
       <Notice kind="info">
         <b>Sneller:</b> open het bestand in de app Bestanden, tik op <b>Delen</b> en kies <b>Urenstaat</b>. Dan
         hoef je het bestand niet zelf op te zoeken.

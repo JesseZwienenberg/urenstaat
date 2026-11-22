@@ -1,7 +1,14 @@
 /** App state: an in-memory copy of the database, plus simple screen navigation. */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as database from './lib/db';
-import { DEFAULT_SETTINGS, type Settings, type Tool, type WeekRecord, type WorkLocation } from './types';
+import {
+  DEFAULT_SETTINGS,
+  type MarkedPlace,
+  type Settings,
+  type Tool,
+  type WeekRecord,
+  type WorkLocation,
+} from './types';
 
 export type Screen =
   | { name: 'home' }
@@ -17,10 +24,13 @@ interface Store {
   ready: boolean;
   settings: Settings;
   locations: WorkLocation[];
+  places: MarkedPlace[];
   tools: Tool[];
   weeks: Record<string, WeekRecord>;
   saveSettings(settings: Settings): Promise<void>;
   saveLocation(location: WorkLocation): Promise<void>;
+  savePlace(place: MarkedPlace): Promise<void>;
+  deletePlace(id: string): Promise<void>;
   saveTool(tool: Tool): Promise<void>;
   deleteTool(id: string): Promise<void>;
   saveWeek(week: WeekRecord): Promise<void>;
@@ -47,6 +57,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [locations, setLocations] = useState<WorkLocation[]>([]);
+  const [places, setPlaces] = useState<MarkedPlace[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [weeks, setWeeks] = useState<Record<string, WeekRecord>>({});
   const [sharedFile, setSharedFile] = useState<File | null>(null);
@@ -56,6 +67,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const apply = useCallback((data: database.AllData) => {
     setSettings(data.settings);
     setLocations(data.locations);
+    setPlaces(data.places);
     setTools(data.tools);
     setWeeks(Object.fromEntries(data.weeks.map((w) => [w.id, w])));
   }, []);
@@ -86,6 +98,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ready,
       settings,
       locations,
+      places,
       tools,
       weeks,
       async saveSettings(next) {
@@ -95,6 +108,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       async saveLocation(location) {
         setLocations((list) => upsert(list, location));
         await database.putLocation(location);
+      },
+      async savePlace(place) {
+        setPlaces((list) => upsert(list, place));
+        await database.putPlace(place);
+      },
+      async deletePlace(id) {
+        setPlaces((list) => list.filter((p) => p.id !== id));
+        await database.removePlace(id);
       },
       async saveTool(tool) {
         setTools((list) => upsert(list, tool));
@@ -142,7 +163,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
       },
     };
-  }, [ready, settings, locations, tools, weeks, sharedFile, stack, apply]);
+  }, [ready, settings, locations, places, tools, weeks, sharedFile, stack, apply]);
 
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }

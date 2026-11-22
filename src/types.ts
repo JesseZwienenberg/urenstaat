@@ -7,6 +7,9 @@ export interface Settings {
   normHours: number;
   /** Stays shorter than this are ignored. */
   minStayMinutes: number;
+  /** Only time between these hours (Amsterdam clock) counts as work. */
+  workStartHour: number;
+  workEndHour: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -14,6 +17,8 @@ export const DEFAULT_SETTINGS: Settings = {
   company: '',
   normHours: 8,
   minStayMinutes: 15,
+  workStartHour: 6,
+  workEndHour: 17,
 };
 
 export interface WorkLocation {
@@ -29,6 +34,22 @@ export interface WorkLocation {
 }
 
 export const DEFAULT_RADIUS = 150;
+
+/**
+ * A regularly visited place that is not a job.
+ * - "private" (home, sports club): never counts, and is hidden from "Onbekende plekken".
+ * - "work" (builders' merchant, workshop): counts as work for the next job visited that day.
+ */
+export interface MarkedPlace {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  radius: number;
+  kind: 'private' | 'work';
+}
+
+export const PLACE_RADIUS = 100;
 
 export interface Tool {
   id: string;
@@ -94,6 +115,8 @@ export interface BackupFile {
   exportedAt: string;
   settings: Settings;
   locations: WorkLocation[];
+  /** Missing in backups made before marked places existed. */
+  places?: MarkedPlace[];
   tools: Tool[];
   weeks: WeekRecord[];
 }

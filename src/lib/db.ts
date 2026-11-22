@@ -3,6 +3,7 @@ import { openDB, type IDBPDatabase } from 'idb';
 import {
   DEFAULT_SETTINGS,
   type BackupFile,
+  type MarkedPlace,
   type Settings,
   type Tool,
   type WeekRecord,
@@ -10,17 +11,20 @@ import {
 } from '../types';
 
 const DB_NAME = 'urenstaat';
-const STORES = ['settings', 'locations', 'tools', 'weeks'] as const;
+const STORES = ['settings', 'locations', 'places', 'tools', 'weeks'] as const;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
 function db(): Promise<IDBPDatabase> {
-  dbPromise ??= openDB(DB_NAME, 1, {
-    upgrade(database) {
-      database.createObjectStore('settings');
-      database.createObjectStore('locations', { keyPath: 'id' });
-      database.createObjectStore('tools', { keyPath: 'id' });
-      database.createObjectStore('weeks', { keyPath: 'id' });
+  dbPromise ??= openDB(DB_NAME, 2, {
+    upgrade(database, oldVersion) {
+      if (oldVersion < 1) {
+        database.createObjectStore('settings');
+        database.createObjectStore('locations', { keyPath: 'id' });
+        database.createObjectStore('tools', { keyPath: 'id' });
+        database.createObjectStore('weeks', { keyPath: 'id' });
+      }
+      if (oldVersion < 2) database.createObjectStore('places', { keyPath: 'id' });
     },
   });
   return dbPromise;
@@ -29,19 +33,21 @@ function db(): Promise<IDBPDatabase> {
 export interface AllData {
   settings: Settings;
   locations: WorkLocation[];
+  places: MarkedPlace[];
   tools: Tool[];
   weeks: WeekRecord[];
 }
 
 export async function loadAll(): Promise<AllData> {
   const database = await db();
-  const [settings, locations, tools, weeks] = await Promise.all([
+  const [settings, locations, places, tools, weeks] = await Promise.all([
     database.get('settings', 'main'),
     database.getAll('locations'),
+    database.getAll('places'),
     database.getAll('tools'),
     database.getAll('weeks'),
   ]);
-  return { settings: { ...DEFAULT_SETTINGS, ...(settings ?? {}) }, locations, tools, weeks };
+  return { settings: { ...DEFAULT_SETTINGS, ...(settings ?? {}) }, locations, places, tools, weeks };
 }
 
 export async function putSettings(settings: Settings) {
@@ -49,6 +55,12 @@ export async function putSettings(settings: Settings) {
 }
 export async function putLocation(location: WorkLocation) {
   await (await db()).put('locations', location);
+}
+export async function putPlace(place: MarkedPlace) {
+  await (await db()).put('places', place);
+}
+export async function removePlace(id: string) {
+  await (await db()).delete('places', id);
 }
 export async function putTool(tool: Tool) {
   await (await db()).put('tools', tool);
@@ -70,6 +82,7 @@ export async function restoreAll(data: AllData) {
   await Promise.all(STORES.map((name) => tx.objectStore(name).clear()));
   await tx.objectStore('settings').put(data.settings, 'main');
   for (const item of data.locations) await tx.objectStore('locations').put(item);
+  for (const item of data.places) await tx.objectStore('places').put(item);
   for (const item of data.tools) await tx.objectStore('tools').put(item);
   for (const item of data.weeks) await tx.objectStore('weeks').put(item);
   await tx.done;
@@ -100,6 +113,7 @@ export function parseBackup(text: string): AllData {
   return {
     settings: { ...DEFAULT_SETTINGS, ...(backup.settings ?? {}) },
     locations: backup.locations,
+    places: Array.isArray(backup.places) ? backup.places : [],
     tools: backup.tools,
     weeks: backup.weeks,
   };

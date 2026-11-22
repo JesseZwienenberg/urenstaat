@@ -5,7 +5,7 @@ import { useStore } from '../store';
 import { DEFAULT_RADIUS, type WorkLocation } from '../types';
 
 export function Locations() {
-  const { locations, go, saveLocation } = useStore();
+  const { locations, places, go, saveLocation, deletePlace } = useStore();
   const [showArchived, setShowArchived] = useState(false);
   const byNumber = (a: WorkLocation, b: WorkLocation) =>
     a.werknummer.localeCompare(b.werknummer, 'nl', { numeric: true });
@@ -41,6 +41,36 @@ export function Locations() {
             {showArchived ? 'Verberg' : 'Toon'} gearchiveerde locaties ({archived.length})
           </Button>
           {showArchived && archived.map(row)}
+        </>
+      )}
+
+      {places.length > 0 && (
+        <>
+          <h2 className="pt-2 text-xl font-bold">Vaste plekken</h2>
+          <p className="text-base text-gray-700">
+            Plekken zonder werknummer die je hebt gemarkeerd bij “Onbekende plekken”.
+          </p>
+          {[...places]
+            .sort((a, b) => a.name.localeCompare(b.name, 'nl'))
+            .map((place) => (
+              <Card key={place.id} className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-lg font-bold">{place.name}</p>
+                  <p className="text-base text-gray-700">
+                    {place.kind === 'work' ? 'Werk: telt mee bij de volgende klus' : 'Privé: telt niet mee'}
+                  </p>
+                </div>
+                <Button
+                  variant="danger"
+                  className="w-auto! text-base"
+                  onClick={() => {
+                    if (window.confirm(`“${place.name}” niet meer als vaste plek gebruiken?`)) void deletePlace(place.id);
+                  }}
+                >
+                  Verwijder
+                </Button>
+              </Card>
+            ))}
         </>
       )}
     </Page>
