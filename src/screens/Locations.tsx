@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button, Card, ErrorNotice, Field, Notice, Page, useError } from '../components/ui';
 import { currentPosition, searchAddress, type AddressResult } from '../lib/device';
 import { byWerknummer, locationLabel } from '../lib/location';
+import { findByName, searchByName } from '../lib/search';
 import { useStore } from '../store';
 import { DEFAULT_RADIUS, type WorkLocation } from '../types';
 
@@ -219,34 +220,44 @@ export function LocationForm({
   );
 }
 
+/** How many materials the list shows at once. With more, the search box narrows it down. */
+const LIST_LIMIT = 50;
+
 export function ToolsScreen() {
   const { tools, saveTool, deleteTool } = useStore();
+  const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const sorted = [...tools].sort((a, b) => a.name.localeCompare(b.name, 'nl'));
+  const [error, setError] = useError();
+  const found = useMemo(() => searchByName(tools, query), [tools, query]);
+  const shown = found.slice(0, LIST_LIMIT);
 
   function start(id: string | null) {
     const tool = tools.find((t) => t.id === id);
     setEditing(id ?? 'new');
-    setName(tool?.name ?? '');
+    // A new material starts with what was typed in the search box, unless that is already in the list.
+    setName(tool?.name ?? (findByName(tools, query) ? '' : query.trim()));
     setDescription(tool?.description ?? '');
+    setError('');
   }
 
   async function save() {
-    if (name.trim() === '') return;
-    await saveTool({
-      id: editing && editing !== 'new' ? editing : crypto.randomUUID(),
-      name: name.trim(),
-      description: description.trim(),
-    });
+    const trimmed = name.trim();
+    if (trimmed === '') return;
+    const id = editing && editing !== 'new' ? editing : crypto.randomUUID();
+    const same = findByName(tools, trimmed);
+    if (same && same.id !== id) return setError(`“${same.name}” staat al in je lijst.`);
+    await saveTool({ id, name: trimmed, description: description.trim() });
     setEditing(null);
   }
 
   return (
     <Page title="Materialen" footer={editing ? undefined : <Button onClick={() => start(null)}>+ Nieuw materiaal</Button>}>
       {editing && (
-        <Card className="space-y-4">
+        // Keyed, so switching to another material focuses (and scrolls to) the name field again.
+        <Card key={editing} className="space-y-4">
+          <ErrorNotice error={error} />
           <Field label="Naam" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
           <Field label="Omschrijving (hoeft niet)" value={description} onChange={(e) => setDescription(e.target.value)} />
           <div className="grid grid-cols-2 gap-3">
@@ -259,8 +270,21 @@ export function ToolsScreen() {
           </div>
         </Card>
       )}
-      {sorted.length === 0 && !editing && <p className="text-gray-600">Nog geen materialen in je lijst.</p>}
-      {sorted.map((tool) => (
+      {(tools.length > 10 || query !== '') && (
+        <Field
+          label="Zoek materiaal"
+          placeholder="Typ een deel van de naam…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          autoComplete="off"
+          type="search"
+        />
+      )}
+      {tools.length > 0 && found.length === 0 && (
+        <p className="text-gray-600">Geen materiaal gevonden met “{query.trim()}”.</p>
+      )}
+      {tools.length === 0 && !editing && <p className="text-gray-600">Nog geen materialen in je lijst.</p>}
+      {shown.map((tool) => (
         <Card key={tool.id} className="space-y-3">
           <div>
             <p className="text-lg font-bold">{tool.name}</p>
@@ -281,6 +305,11 @@ export function ToolsScreen() {
           </div>
         </Card>
       ))}
+      {found.length > shown.length && (
+        <p className="text-center text-base text-gray-600">
+          Nog {found.length - shown.length} meer. Typ in het zoekvak om ze te vinden.
+        </p>
+      )}
     </Page>
   );
 }

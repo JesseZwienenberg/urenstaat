@@ -5,6 +5,7 @@ import { canShareFile, downloadFile, shareFile } from '../lib/device';
 import { dayName, formatDate, formatDayShort, formatHours, formatMinutes } from '../lib/format';
 import { applyProposals, dayTotal, HOUR_STEP, weekTotal, workdaysOf, type UnknownVisit } from '../lib/hours';
 import { byWerknummer, hasWerknummer, locationLabel, placeName } from '../lib/location';
+import { findByName, searchByName } from '../lib/search';
 import { parseTimelineText, sliceTimeline, TimelineParseError } from '../lib/timeline/parser';
 import { isWeekend, timeOf } from '../lib/tz';
 import { shiftWeek, weekDates, weekId, weekRangeMs } from '../lib/week';
@@ -428,14 +429,21 @@ function DayCard({
 
 function ToolsStep({ week }: { week: WeekRecord }) {
   const { tools, locations, weeks, saveWeek, saveTool, go } = useStore();
-  const [toolId, setToolId] = useState('');
+  const [text, setText] = useState('');
+  const [suggesting, setSuggesting] = useState(false);
   const [locationId, setLocationId] = useState('');
-  const [newName, setNewName] = useState('');
   const [message, setMessage] = useState('');
 
   const toolById = new Map(tools.map((t) => [t.id, t]));
   const locationById = new Map(locations.map((l) => [l.id, l]));
-  const sortedTools = [...tools].sort((a, b) => a.name.localeCompare(b.name, 'nl'));
+
+  // Free text with suggestions from the list. A name that is not in the list yet is added on "Toevoegen".
+  const typed = text.trim();
+  const known = findByName(tools, typed);
+  const suggestions = useMemo(
+    () => (suggesting && typed !== '' ? searchByName(tools, typed).filter((t) => t !== known).slice(0, 6) : []),
+    [tools, typed, known, suggesting],
+  );
 
   // Locations worked on this week come first; they are the likely choice.
   const usedIds = new Set(Object.values(week.days).flatMap((d) => d.entries.map((e) => e.locationId)));
@@ -451,21 +459,20 @@ function ToolsStep({ week }: { week: WeekRecord }) {
     list.some((u) => u.toolId === tool && u.locationId === location);
 
   async function add() {
-    let id = toolId;
-    if (toolId === 'new') {
-      if (newName.trim() === '') return;
-      id = crypto.randomUUID();
-      await saveTool({ id, name: newName.trim(), description: '' });
-    }
-    if (!id || !chosenLocation) return;
-    if (has(week.tools, id, chosenLocation)) {
+    if (typed === '' || !chosenLocation) return;
+    if (known && has(week.tools, known.id, chosenLocation)) {
       setMessage('Dit materiaal staat al bij dit werknummer.');
       return;
     }
+    let id = known?.id;
+    if (!id) {
+      id = crypto.randomUUID();
+      await saveTool({ id, name: typed, description: '' });
+    }
     setMessage('');
     await save([...week.tools, { id: crypto.randomUUID(), toolId: id, locationId: chosenLocation, dates: [] }]);
-    setToolId('');
-    setNewName('');
+    setText('');
+    setSuggesting(false);
   }
 
   async function copyPrevious() {
@@ -515,17 +522,42 @@ function ToolsStep({ week }: { week: WeekRecord }) {
           <p className="text-base text-gray-700">Voeg eerst een werklocatie toe.</p>
         ) : (
           <>
-            <select className={selectClass} value={toolId} onChange={(e) => setToolId(e.target.value)} aria-label="Materiaal">
-              <option value="">Kies materiaal…</option>
-              {sortedTools.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-              <option value="new">+ Nieuw materiaal…</option>
-            </select>
-            {toolId === 'new' && (
-              <Field label="Naam nieuw materiaal" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus />
+            <Field
+              label="Materiaal"
+              placeholder="Typ om te zoeken…"
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                setSuggesting(true);
+              }}
+              autoComplete="off"
+            />
+            {suggestions.length > 0 && (
+              <ul
+                className="divide-y divide-emerald-200 overflow-hidden rounded-xl border-2 border-emerald-300 bg-emerald-50"
+                aria-label="Suggesties"
+              >
+                {suggestions.map((tool) => (
+                  <li key={tool.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setText(tool.name);
+                        setSuggesting(false);
+                      }}
+                      className="min-h-14 w-full px-3 py-2 text-left text-lg active:bg-emerald-100"
+                    >
+                      {tool.name}
+                      {tool.description && <span className="block text-sm text-gray-600">{tool.description}</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {typed !== '' && !known && (
+              <p className="text-base text-gray-700">
+                <b>Nieuw:</b> “{typed}” staat nog niet in je lijst. Bij Toevoegen komt het erin.
+              </p>
             )}
             <select
               className={selectClass}
@@ -540,10 +572,7 @@ function ToolsStep({ week }: { week: WeekRecord }) {
                 </option>
               ))}
             </select>
-            <Button
-              onClick={add}
-              disabled={!toolId || !chosenLocation || (toolId === 'new' && newName.trim() === '')}
-            >
+            <Button onClick={add} disabled={typed === '' || !chosenLocation}>
               Toevoegen
             </Button>
           </>

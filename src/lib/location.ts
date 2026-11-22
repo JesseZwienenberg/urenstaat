@@ -1,5 +1,6 @@
 /** Display helpers for work locations. The werknummer may still be empty while it is not known yet. */
 import type { WorkLocation } from '../types';
+import { compareNames } from './search';
 
 export function hasWerknummer(location: WorkLocation): boolean {
   return location.werknummer.trim() !== '';
@@ -24,5 +25,5 @@ export function byWerknummer(a: WorkLocation, b: WorkLocation): number {
   const x = a.werknummer.trim();
   const y = b.werknummer.trim();
   if (!x !== !y) return x ? -1 : 1;
-  return x.localeCompare(y, 'nl', { numeric: true }) || placeName(a).localeCompare(placeName(b), 'nl');
+  return compareNames(x, y) || compareNames(placeName(a), placeName(b));
 }
