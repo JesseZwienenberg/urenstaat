@@ -1,5 +1,5 @@
 /** Shared building blocks: large touch targets, large text. */
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
 import { useStore } from '../store';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -84,6 +84,15 @@ export function Field({
 }
 
 export function Notice({ kind, children }: { kind: 'error' | 'warning' | 'ok' | 'info'; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // An error often appears outside the part of the screen he is looking at (for example at the
+  // top of a long form after tapping "Opslaan" at the bottom), so bring it into view.
+  useEffect(() => {
+    if (kind !== 'error' || !ref.current) return;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // "center" keeps it clear of the sticky header and footer.
+    ref.current.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+  }, [kind]);
   const styles = {
     error: 'border-red-300 bg-red-50 text-red-900',
     warning: 'border-amber-400 bg-amber-50 text-amber-900',
@@ -91,10 +100,31 @@ export function Notice({ kind, children }: { kind: 'error' | 'warning' | 'ok' | 
     info: 'border-gray-300 bg-white text-gray-800',
   }[kind];
   return (
-    <div role={kind === 'error' ? 'alert' : 'status'} className={`rounded-xl border-2 p-3 text-base ${styles}`}>
+    <div ref={ref} role={kind === 'error' ? 'alert' : 'status'} className={`rounded-xl border-2 p-3 text-base ${styles}`}>
       {children}
     </div>
   );
+}
+
+export interface ErrorMessage {
+  text: string;
+  /** Changes on every setError, so the notice scrolls into view again even when the text is the same. */
+  id: number;
+}
+
+/** Error state for a screen; show it with <ErrorNotice>. setError('') hides it. */
+export function useError() {
+  const [error, setState] = useState<ErrorMessage>({ text: '', id: 0 });
+  const setError = useCallback((text: string) => setState((e) => ({ text, id: e.id + 1 })), []);
+  return [error, setError] as const;
+}
+
+export function ErrorNotice({ error }: { error: ErrorMessage }) {
+  return error.text ? (
+    <Notice key={error.id} kind="error">
+      {error.text}
+    </Notice>
+  ) : null;
 }
 
 export const selectClass =

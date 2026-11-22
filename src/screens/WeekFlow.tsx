@@ -1,9 +1,10 @@
 /** Steps 2–5 of the weekly flow: import, check hours, tools, document. */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card, Field, Notice, Page, selectClass } from '../components/ui';
+import { Button, Card, ErrorNotice, Field, Notice, Page, selectClass, useError } from '../components/ui';
 import { canShareFile, downloadFile, shareFile } from '../lib/device';
 import { dayName, formatDate, formatDayShort, formatHours, formatMinutes } from '../lib/format';
 import { applyProposals, dayTotal, HOUR_STEP, weekTotal, workdaysOf, type UnknownVisit } from '../lib/hours';
+import { byWerknummer, hasWerknummer, locationLabel, placeName } from '../lib/location';
 import { parseTimelineText, sliceTimeline, TimelineParseError } from '../lib/timeline/parser';
 import { isWeekend, timeOf } from '../lib/tz';
 import { shiftWeek, weekDates, weekId, weekRangeMs } from '../lib/week';
@@ -17,11 +18,6 @@ function useWeek(id: string): WeekRecord | undefined {
 }
 
 const weekTitle = (week: WeekRecord) => `Week ${week.isoWeek} · ${week.isoYear}`;
-
-function locationLabel(location: WorkLocation | undefined): string {
-  if (!location) return 'Onbekende locatie';
-  return location.name ? `${location.werknummer} · ${location.name}` : location.werknummer;
-}
 
 export function WeekFlow({ weekId: id, step }: { weekId: string; step: 2 | 3 | 4 | 5 }) {
   const week = useWeek(id);
@@ -43,7 +39,7 @@ export function WeekFlow({ weekId: id, step }: { weekId: string; step: 2 | 3 | 4
 function ImportStep({ week }: { week: WeekRecord }) {
   const { locations, places, settings, saveWeek, go, sharedFile, setSharedFile } = useStore();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useError();
   const [summary, setSummary] = useState<{ stays: number; matchedDays: number } | null>(null);
 
   async function importFile(file: File) {
@@ -105,7 +101,7 @@ function ImportStep({ week }: { week: WeekRecord }) {
         </Button>
       }
     >
-      {error && <Notice kind="error">{error}</Notice>}
+      <ErrorNotice error={error} />
       {summary && (
         <Notice kind="ok">
           Gelukt. {summary.stays} plekken gevonden in deze week; op {summary.matchedDays}{' '}
@@ -157,10 +153,7 @@ function HoursStep({ week }: { week: WeekRecord }) {
   const [unknown, setUnknown] = useState<UnknownVisit[]>([]);
   const locationById = useMemo(() => new Map(locations.map((l) => [l.id, l])), [locations]);
   const active = useMemo(
-    () =>
-      locations
-        .filter((l) => !l.archived)
-        .sort((a, b) => a.werknummer.localeCompare(b.werknummer, 'nl', { numeric: true })),
+    () => locations.filter((l) => !l.archived).sort(byWerknummer),
     [locations],
   );
 
@@ -448,11 +441,7 @@ function ToolsStep({ week }: { week: WeekRecord }) {
   const usedIds = new Set(Object.values(week.days).flatMap((d) => d.entries.map((e) => e.locationId)));
   const options = locations
     .filter((l) => !l.archived || usedIds.has(l.id))
-    .sort(
-      (a, b) =>
-        Number(usedIds.has(b.id)) - Number(usedIds.has(a.id)) ||
-        a.werknummer.localeCompare(b.werknummer, 'nl', { numeric: true }),
-    );
+    .sort((a, b) => Number(usedIds.has(b.id)) - Number(usedIds.has(a.id)) || byWerknummer(a, b));
   const chosenLocation = locationId || (options.length > 0 && usedIds.size === 1 ? options[0].id : '');
 
   const previous = weeks[weekId(shiftWeek(week, -1))];
@@ -568,7 +557,7 @@ function ToolsStep({ week }: { week: WeekRecord }) {
 
 function DocumentStep({ week }: { week: WeekRecord }) {
   const { settings, locations, tools, go, home } = useStore();
-  const [error, setError] = useState('');
+  const [error, setError] = useError();
   const [done, setDone] = useState('');
 
   const wrongDays = weekDates(week).filter((d) => {
@@ -576,6 +565,14 @@ function DocumentStep({ week }: { week: WeekRecord }) {
     return day && day.entries.length > 0 && dayTotal(day) !== settings.normHours;
   });
   const total = weekTotal(week);
+
+  // Locations on this week's timesheet whose werknummer is not known yet: that cell stays empty.
+  const toolIds = new Set(tools.map((t) => t.id));
+  const onSheet = new Set([
+    ...Object.values(week.days).flatMap((d) => d.entries.map((e) => e.locationId)),
+    ...week.tools.filter((u) => toolIds.has(u.toolId)).map((u) => u.locationId),
+  ]);
+  const withoutNumber = locations.filter((l) => onSheet.has(l.id) && !hasWerknummer(l)).sort(byWerknummer);
 
   // The PDF is built as soon as this screen opens. Android only opens the share
   // sheet if navigator.share is called directly from the tap, with no waiting in between.
@@ -651,7 +648,22 @@ function DocumentStep({ week }: { week: WeekRecord }) {
           </Button>
         </Notice>
       )}
-      {error && <Notice kind="error">{error}</Notice>}
+      {withoutNumber.length > 0 && (
+        <Notice kind="warning">
+          Nog geen werknummer bij {withoutNumber.map(placeName).join(', ')}. Op de urenstaat blijft dat vak leeg.
+          {withoutNumber.map((l) => (
+            <Button
+              key={l.id}
+              variant="secondary"
+              className="mt-3"
+              onClick={() => go({ name: 'location', id: l.id })}
+            >
+              {withoutNumber.length === 1 ? 'Werknummer invullen' : `Werknummer invullen: ${placeName(l)}`}
+            </Button>
+          ))}
+        </Notice>
+      )}
+      <ErrorNotice error={error} />
       {done && <Notice kind="ok">{done}</Notice>}
 
       <Button className="min-h-20 text-xl" onClick={share} disabled={!file}>

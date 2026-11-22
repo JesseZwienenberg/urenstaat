@@ -108,7 +108,9 @@ export function PickWeek() {
 export function SettingsScreen() {
   const store = useStore();
   const [form, setForm] = useState(store.settings);
-  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string; id: number } | null>(null);
+  // A new id each time, so a repeated error is scrolled into view again.
+  const show = (kind: 'ok' | 'error', text: string) => setMessage((m) => ({ kind, text, id: (m?.id ?? 0) + 1 }));
 
   async function save() {
     const normHours = Math.min(24, Math.max(1, Math.round((Number(form.normHours) || 8) * 2) / 2));
@@ -128,7 +130,7 @@ export function SettingsScreen() {
     };
     setForm(next);
     await store.saveSettings(next);
-    setMessage({ kind: 'ok', text: 'Instellingen opgeslagen.' });
+    show('ok', 'Instellingen opgeslagen.');
   }
 
   async function backup() {
@@ -153,15 +155,19 @@ export function SettingsScreen() {
       if (!window.confirm('Alles in de app wordt vervangen door deze back-up. Doorgaan?')) return;
       await store.restore(data);
       setForm(data.settings);
-      setMessage({ kind: 'ok', text: 'Back-up teruggezet.' });
+      show('ok', 'Back-up teruggezet.');
     } catch (err) {
-      setMessage({ kind: 'error', text: err instanceof Error ? err.message : 'Terugzetten is mislukt.' });
+      show('error', err instanceof Error ? err.message : 'Terugzetten is mislukt.');
     }
   }
 
   return (
     <Page title="Instellingen">
-      {message && <Notice kind={message.kind}>{message.text}</Notice>}
+      {message && (
+        <Notice key={message.id} kind={message.kind}>
+          {message.text}
+        </Notice>
+      )}
       <Card className="space-y-4">
         <Field label="Naam" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <Field

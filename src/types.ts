@@ -23,7 +23,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export interface WorkLocation {
   id: string;
-  /** Job number: required and unique. */
+  /** Job number. Empty while it is not known yet; unique when filled in. */
   werknummer: string;
   name: string;
   address: string;
