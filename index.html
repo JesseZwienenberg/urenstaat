@@ -8,6 +8,47 @@
     <link rel="icon" type="image/png" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
     <title>Urenstaat</title>
+    <script>
+      // Safety net: if the app's own files cannot be loaded (an outdated offline copy that refers
+      // to files that no longer exist), drop the offline copy and load the app again from the
+      // internet. Saved data (IndexedDB) is not touched. At most once per session, and only online.
+      (function () {
+        var started = false;
+        function recover() {
+          if (started || !navigator.onLine || !navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+          started = true;
+          try {
+            if (sessionStorage.getItem('urenstaat-recovered')) return;
+            sessionStorage.setItem('urenstaat-recovered', '1');
+          } catch (e) {}
+          var reload = function () {
+            location.reload();
+          };
+          Promise.all([
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+              return Promise.all(registrations.map(function (r) { return r.unregister(); }));
+            }),
+            caches.keys().then(function (keys) {
+              // The shared-file cache may hold a Timeline file that was just shared into the app.
+              return Promise.all(keys.filter(function (k) { return k !== 'urenstaat-share'; }).map(function (k) { return caches.delete(k); }));
+            }),
+          ]).then(reload, reload);
+        }
+        addEventListener(
+          'error',
+          function (event) {
+            var el = event.target;
+            if (el && (el.tagName === 'SCRIPT' || (el.tagName === 'LINK' && /stylesheet|modulepreload/.test(el.rel)))) recover();
+          },
+          true,
+        );
+        addEventListener('load', function () {
+          setTimeout(function () {
+            if (!document.getElementById('root').hasChildNodes()) recover();
+          }, 5000);
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

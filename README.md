@@ -50,6 +50,12 @@ Code layout:
 
 `tests/fixtures/sample-timeline.json` is **made up** (see `scripts/make-sample.mjs`). It follows the layout the Android export is known to use, but it has not been compared with a real file from this phone. Import a real export once and check the result before relying on the app.
 
+### Updates and the offline copy
+
+`public/sw.js` keeps an offline copy of the app. A new version is stored in full, past the browser's HTTP cache, and only used once its start page matches its own files. If the app still fails to load its files, a small script in `index.html` drops the offline copy and loads the app again; saved data stays.
+
+If the app ever shows a blank screen after an update: close it and open it again (twice if needed). **Do not clear the site data in Chrome**: that also deletes all saved locations, weeks and materials. Make a backup now and then (Instellingen → Maak back-up).
+
 ## Deploying for free
 
 ### GitHub Pages
