@@ -40,6 +40,8 @@ interface Store {
   sharedFile: File | null;
   setSharedFile(file: File | null): void;
   screen: Screen;
+  /** The screen below the current one, where back() returns to. */
+  previous: Screen | undefined;
   go(screen: Screen): void;
   back(): void;
   home(): void;
@@ -144,6 +146,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sharedFile,
       setSharedFile,
       screen: stack[stack.length - 1],
+      previous: stack[stack.length - 2],
       go(screen) {
         depth.current += 1;
         window.history.pushState({ depth: depth.current }, '');

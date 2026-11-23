@@ -1,12 +1,12 @@
 /** Steps 2–5 of the weekly flow: import, check hours, tools, document. */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TimesheetPreview } from '../components/TimesheetPreview';
-import { addSelectClass, Button, Card, ErrorNotice, Field, Notice, Page, selectClass, useError } from '../components/ui';
+import { Button, Card, ErrorNotice, Field, Notice, Page, selectClass, useError } from '../components/ui';
 import { canShareFile, downloadFile, shareFile } from '../lib/device';
 import { dayName, formatDate, formatDayShort, formatHours, formatMinutes } from '../lib/format';
 import { applyProposals, dayTotal, HOUR_STEP, weekTotal, workdaysOf, type UnknownVisit } from '../lib/hours';
 import { byWerknummer, hasWerknummer, locationLabel, placeName } from '../lib/location';
-import { findByName, searchByName } from '../lib/search';
+import { findByName, normalizeName, searchByName } from '../lib/search';
 import { buildTimesheet, timesheetText } from '../lib/timesheet';
 import { parseTimelineText, sliceTimeline, TimelineParseError } from '../lib/timeline/parser';
 import { isWeekend, timeOf } from '../lib/tz';
@@ -101,7 +101,7 @@ export function WeekFlow({ weekId: id, step }: { weekId: string; step: 2 | 3 | 4
 /* ---------------------------------------------------------------- Step 2 */
 
 function ImportStep({ week }: { week: WeekRecord }) {
-  const { locations, places, settings, saveWeek, go, sharedFile, setSharedFile } = useStore();
+  const { locations, places, settings, saveWeek, go, back, previous, sharedFile, setSharedFile } = useStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useError();
   const [summary, setSummary] = useState<{ stays: number; matchedDays: number } | null>(null);
@@ -153,7 +153,10 @@ function ImportStep({ week }: { week: WeekRecord }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedFile]);
 
-  const next = () => go({ name: 'week', weekId: week.id, step: 3 });
+  // Opened from "Controleer uren": return there instead of stacking a second hours screen.
+  const fromHours = previous?.name === 'week' && previous.weekId === week.id && previous.step === 3;
+  const next = () => (fromHours ? back() : go({ name: 'week', weekId: week.id, step: 3 }));
+  const hasOwnDays = Object.values(week.days).some((d) => d.manual);
 
   return (
     <Page
@@ -172,10 +175,10 @@ function ImportStep({ week }: { week: WeekRecord }) {
           {summary.matchedDays === 1 ? 'werkdag' : 'werkdagen'} was je op een werklocatie.
         </Notice>
       )}
-      {!summary && week.importedAt && (
+      {!summary && (week.importedAt || hasOwnDays) && (
         <Notice kind="info">
-          Voor deze week is al een bestand geïmporteerd. Je kunt verder, of een nieuwer bestand kiezen. Dagen die je
-          zelf hebt aangepast blijven zoals ze zijn.
+          {week.importedAt && 'Voor deze week is al een bestand geïmporteerd. Je kunt verder, of een nieuwer bestand kiezen. '}
+          Dagen die je zelf hebt ingevuld of aangepast blijven zoals ze zijn.
         </Notice>
       )}
       {locations.filter((l) => !l.archived).length === 0 && (
@@ -251,6 +254,15 @@ function HoursStep({ week }: { week: WeekRecord }) {
         </>
       }
     >
+      {week.importedAt === null && (
+        <Notice kind="info">
+          Nog geen Tijdlijn geïmporteerd voor deze week. Dat kan altijd nog, ook als je al materialen of uren hebt
+          ingevuld.
+          <Button variant="secondary" className="mt-3" onClick={() => go({ name: 'week', weekId: week.id, step: 2 })}>
+            Tijdlijn importeren
+          </Button>
+        </Notice>
+      )}
       {shown.map((date) => (
         <DayCard
           key={date}
@@ -269,8 +281,17 @@ function HoursStep({ week }: { week: WeekRecord }) {
         + Nieuwe werklocatie
       </Button>
       <p className="-mt-2 text-sm text-gray-600">
-        Klopt de Tijdlijn niet? Voeg de locatie hier toe en kies hem daarna bij de dag met “+ Locatie toevoegen”.
+        Klopt de Tijdlijn niet? Voeg de locatie hier toe en kies hem daarna bij de dag met “+ Uren toevoegen”.
       </p>
+      {week.importedAt !== null && (
+        <Button
+          variant="ghost"
+          className="min-h-11 text-base"
+          onClick={() => go({ name: 'week', weekId: week.id, step: 2 })}
+        >
+          Nieuwere Tijdlijn importeren
+        </Button>
+      )}
 
       {hiddenWeekend.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
@@ -401,6 +422,14 @@ function DayCard({
   const change = (index: number, update: (entry: HourEntry) => HourEntry) =>
     edit(day.entries.map((e, i) => (i === index ? update(e) : e)));
   const available = active.filter((l) => !day.entries.some((e) => e.locationId === l.id));
+  // "+ Uren toevoegen" opens a list of existing work locations to choose from.
+  const [picking, setPicking] = useState(false);
+  const [filter, setFilter] = useState('');
+  const words = normalizeName(filter).split(' ').filter(Boolean);
+  const matching = available.filter((l) => {
+    const text = normalizeName(`${l.werknummer} ${l.name} ${l.address}`);
+    return words.every((w) => text.includes(w));
+  });
 
   return (
     <Card className="space-y-3">
@@ -503,25 +532,62 @@ function DayCard({
         </Notice>
       )}
 
-      {available.length > 0 && (
-        <select
-          className={addSelectClass}
-          value=""
-          aria-label="Locatie toevoegen"
-          onChange={(e) => {
-            if (!e.target.value) return;
-            const hours = day.entries.length === 0 ? norm : 1;
-            edit([...day.entries, { locationId: e.target.value, hours, measuredMinutes: 0 }]);
-          }}
-        >
-          <option value="">+ Locatie toevoegen…</option>
-          {available.map((l) => (
-            <option key={l.id} value={l.id}>
-              {locationLabel(l)}
-            </option>
-          ))}
-        </select>
-      )}
+      {available.length > 0 &&
+        (picking ? (
+          <div className="space-y-2">
+            <p className="text-base font-semibold">Waar heb je gewerkt?</p>
+            {available.length > 8 && (
+              <input
+                type="search"
+                aria-label="Zoek werklocatie"
+                placeholder="Zoek op werknummer, naam of adres…"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                autoComplete="off"
+                className="min-h-12 w-full rounded-xl border-2 border-gray-300 bg-white px-3 text-base focus:border-emerald-700 focus:outline-none"
+              />
+            )}
+            <ul
+              className="divide-y divide-emerald-200 overflow-hidden rounded-xl border-2 border-emerald-300 bg-emerald-50"
+              aria-label="Werklocaties"
+            >
+              {matching.map((l) => (
+                <li key={l.id}>
+                  <button
+                    type="button"
+                    className="min-h-14 w-full px-3 py-2 text-left active:bg-emerald-100"
+                    onClick={() => {
+                      const hours = day.entries.length === 0 ? norm : 1;
+                      edit([...day.entries, { locationId: l.id, hours, measuredMinutes: 0 }]);
+                      setPicking(false);
+                      setFilter('');
+                    }}
+                  >
+                    <span className="block text-lg font-semibold">{locationLabel(l)}</span>
+                    {l.name.trim() !== '' && l.address.trim() !== '' && (
+                      <span className="block text-sm text-gray-600">{l.address}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+              {matching.length === 0 && <li className="p-3 text-base text-gray-600">Geen werklocatie gevonden.</li>}
+            </ul>
+            <Button
+              variant="ghost"
+              className="min-h-11 text-base"
+              onClick={() => {
+                setPicking(false);
+                setFilter('');
+              }}
+            >
+              Annuleer
+            </Button>
+          </div>
+        ) : (
+          <Button variant="secondary" className="text-base" onClick={() => setPicking(true)}>
+            + Uren toevoegen
+          </Button>
+        ))}
 
       {day.manual && canReset && (
         <Button variant="ghost" className="min-h-11 text-base" onClick={onReset}>

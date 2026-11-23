@@ -66,8 +66,24 @@ export function Page({
   );
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-xl bg-white p-4 shadow-sm ${className}`}>{children}</section>;
+export function Card({
+  children,
+  className = '',
+  highlighted = false,
+  id,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Light green with a green edge, e.g. for something just added. */
+  highlighted?: boolean;
+  id?: string;
+}) {
+  const tone = highlighted ? 'bg-emerald-50 ring-2 ring-emerald-600' : 'bg-white';
+  return (
+    <section id={id} className={`rounded-xl p-4 shadow-sm ${tone} ${className}`}>
+      {children}
+    </section>
+  );
 }
 
 export function Field({
@@ -170,9 +186,6 @@ export function ErrorNotice({ error }: { error: ErrorMessage }) {
 export const selectClass =
   'min-h-14 w-full rounded-xl border-2 border-gray-300 bg-white px-3 text-lg focus:border-emerald-700 focus:outline-none';
 
-/** A dropdown that adds something ("+ Locatie toevoegen…"): dashed green, so it reads as an action. */
-export const addSelectClass =
-  'min-h-14 w-full rounded-xl border-2 border-dashed border-emerald-700 bg-white px-3 text-lg font-semibold text-emerald-800 focus:outline-none';
 
 export function Steps({ current }: { current: 1 | 2 | 3 | 4 | 5 }) {
   return (
