@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Checkbox, ErrorNotice, Field, Notice, Page, useError } from '../components/ui';
 import { currentPosition, searchAddress, type AddressResult } from '../lib/device';
 import { byWerknummer, locationLabel } from '../lib/location';
@@ -6,14 +6,33 @@ import { findByName, searchByName } from '../lib/search';
 import { useStore } from '../store';
 import { DEFAULT_RADIUS, type WorkLocation } from '../types';
 
+/** A location just added from the list: highlighted and scrolled to when the list shows again. */
+let justAdded: string | null = null;
+
 export function Locations() {
   const { locations, places, go, saveLocation, deletePlace } = useStore();
   const [showArchived, setShowArchived] = useState(false);
+  const [highlight] = useState(() => {
+    const id = justAdded;
+    justAdded = null;
+    return id;
+  });
+  useEffect(() => {
+    if (!highlight) return;
+    // After the browser has restored the list's scroll position.
+    const timer = setTimeout(() => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document
+        .getElementById(`locatie-${highlight}`)
+        ?.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [highlight]);
   const active = locations.filter((l) => !l.archived).sort(byWerknummer);
   const archived = locations.filter((l) => l.archived).sort(byWerknummer);
 
   const row = (location: WorkLocation) => (
-    <Card key={location.id} className="space-y-3">
+    <Card key={location.id} id={`locatie-${location.id}`} highlighted={location.id === highlight} className="space-y-3">
       <div>
         <p className="text-lg font-bold">{locationLabel(location)}</p>
         <p className="text-base text-gray-700">{location.address}</p>
@@ -83,7 +102,7 @@ export function LocationForm({
   id?: string;
   preset?: { lat: number; lng: number; name?: string; address?: string };
 }) {
-  const { locations, saveLocation, back } = useStore();
+  const { locations, saveLocation, back, previous } = useStore();
   const existing = locations.find((l) => l.id === id);
   const [werknummer, setWerknummer] = useState(existing?.werknummer ?? '');
   const [name, setName] = useState(existing?.name ?? preset?.name ?? '');
@@ -143,8 +162,10 @@ export function LocationForm({
       locations.some((l) => l.id !== existing?.id && l.werknummer.trim().toLowerCase() === number.toLowerCase());
     if (taken) return setError(`Werknummer ${number} bestaat al.`);
     if (!coords) return setError('Zoek het adres op of tik op “Ik ben hier nu”, zodat de app de plek kent.');
+    const locationId = existing?.id ?? crypto.randomUUID();
+    if (!existing && previous?.name === 'locations') justAdded = locationId;
     await saveLocation({
-      id: existing?.id ?? crypto.randomUUID(),
+      id: locationId,
       werknummer: number,
       name: name.trim(),
       address: address.trim(),
