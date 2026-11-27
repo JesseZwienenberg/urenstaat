@@ -20,6 +20,14 @@ export function locationLabel(location: WorkLocation | undefined): string {
   return `${placeName(location)} (geen werknummer)`;
 }
 
+/** The address as a small second line, or '' when it is empty or already the label itself. */
+export function addressLine(location: WorkLocation | undefined): string {
+  if (!location) return '';
+  const address = location.address.trim();
+  const inLabel = location.werknummer.trim() === '' && location.name.trim() === '';
+  return inLabel ? '' : address;
+}
+
 /** By werknummer (2026-9 before 2026-10). Locations without one come last, by name. */
 export function byWerknummer(a: WorkLocation, b: WorkLocation): number {
   const x = a.werknummer.trim();
