@@ -5,7 +5,7 @@ import { Button, Card, ErrorNotice, Field, Notice, Page, selectClass, useError }
 import { canShareFile, downloadFile, shareFile } from '../lib/device';
 import { dayName, formatDate, formatDayShort, formatHours, formatMinutes } from '../lib/format';
 import { applyProposals, dayTotal, HOUR_STEP, weekTotal, workdaysOf, type UnknownVisit } from '../lib/hours';
-import { byWerknummer, hasWerknummer, locationLabel, placeName } from '../lib/location';
+import { addressLine, byWerknummer, hasWerknummer, locationLabel, placeName } from '../lib/location';
 import { findByName, normalizeName, searchByName } from '../lib/search';
 import { buildTimesheet, timesheetText } from '../lib/timesheet';
 import { parseTimelineText, sliceTimeline, TimelineParseError } from '../lib/timeline/parser';
@@ -445,12 +445,14 @@ function DayCard({
 
       {day.entries.map((entry, index) => {
         const location = locationById.get(entry.locationId);
+        const address = addressLine(location);
         return (
           <div key={entry.locationId} className="rounded-xl border border-gray-200 bg-gray-50 p-3">
             <div className="flex items-start justify-between gap-2">
-              <div>
+              <div className="min-w-0">
                 <p className="text-lg font-semibold">{locationLabel(location)}</p>
-                <p className="text-sm text-gray-600">
+                {address && <p className="text-sm break-words text-gray-600">{address}</p>}
+                <p className={`text-sm text-gray-600 ${address ? 'mt-1.5' : ''}`}>
                   {location?.regie && <b className="text-emerald-800">Regie · </b>}
                   {entry.measuredMinutes > 0 ? `Gemeten: ${formatMinutes(entry.measuredMinutes)}` : 'Zelf ingevuld'}
                 </p>
@@ -564,9 +566,7 @@ function DayCard({
                     }}
                   >
                     <span className="block text-lg font-semibold">{locationLabel(l)}</span>
-                    {l.name.trim() !== '' && l.address.trim() !== '' && (
-                      <span className="block text-sm text-gray-600">{l.address}</span>
-                    )}
+                    {addressLine(l) && <span className="block text-sm text-gray-600">{addressLine(l)}</span>}
                   </button>
                 </li>
               ))}
