@@ -269,10 +269,6 @@ export function Help() {
           </li>
         ))}
       </ol>
-      <Notice kind="info">
-        <b>Sneller:</b> open het bestand in de app Bestanden, tik op <b>Delen</b> en kies <b>Uurwerk</b>. Dan
-        hoef je het bestand niet zelf op te zoeken.
-      </Notice>
     </Page>
   );
 }
